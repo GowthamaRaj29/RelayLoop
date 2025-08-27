@@ -1,4 +1,11 @@
 import React, { useState, useEffect, memo, useCallback } from 'react';
+import { 
+  ReadmissionRateChart, 
+  PatientRiskDistribution,
+  DepartmentPerformanceChart,
+  PredictionAccuracyChart
+} from '../../components/charts/DashboardCharts';
+import PredictionGenerator from '../../components/admin/PredictionGenerator';
 
 // Main dashboard component - Using React.memo to prevent unnecessary rerenders
 const AdminDashboard = memo(function AdminDashboard() {
@@ -57,15 +64,11 @@ const AdminDashboard = memo(function AdminDashboard() {
   return (
     <div className="py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-        <h1 className="text-2xl font-semibold text-gray-900">Admin Dashboard</h1>
-        
-        {/* Debug info */}
-        {import.meta.env.DEV && (
-          <div className="mt-2 p-2 bg-blue-50 text-blue-700 rounded-md text-sm">
-            Dashboard component rendered successfully
-          </div>
-        )}
-        
+        <h1 className="text-2xl font-semibold text-gray-900">Hospital Readmission Dashboard</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Monitor patient readmissions, risk levels, and prediction statistics
+        </p>
+
         {/* Stats cards */}
         {isLoading ? (
           <div className="mt-6 grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
@@ -140,96 +143,99 @@ const AdminDashboard = memo(function AdminDashboard() {
           </div>
         )}
 
-        <div className="mt-8 grid gap-6 grid-cols-1 lg:grid-cols-2">
-          {/* Recent Activity Card */}
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <h3 className="text-lg font-medium text-gray-900">Recent Activity</h3>
-              <div className="mt-5">
-                <ul className="divide-y divide-gray-200">
-                  {[
-                    { id: 1, type: 'assessment', patient: 'John Doe', time: '3 hours ago' },
-                    { id: 2, type: 'admission', patient: 'Jane Smith', time: '5 hours ago' },
-                    { id: 3, type: 'prediction', patient: 'Robert Johnson', time: 'Yesterday' },
-                    { id: 4, type: 'assessment', patient: 'Mary Williams', time: 'Yesterday' },
-                  ].map((activity) => (
-                    <li key={activity.id} className="py-4">
-                      <div className="flex items-center space-x-4">
-                        <div className="flex-shrink-0 text-gray-400">
-                          {activity.type === 'assessment' && (
-                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                            </svg>
-                          )}
-                          {activity.type === 'admission' && (
-                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                            </svg>
-                          )}
-                          {activity.type === 'prediction' && (
-                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                            </svg>
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-gray-900">{activity.patient}</p>
-                          <p className="text-sm text-gray-500">
-                            {activity.type === 'assessment' && 'New assessment completed'}
-                            {activity.type === 'admission' && 'Patient admitted'}
-                            {activity.type === 'prediction' && 'Risk prediction updated'}
-                          </p>
-                        </div>
-                        <div className="text-sm text-gray-500">{activity.time}</div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="mt-6">
-                <button
-                  className="w-full py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  onClick={() => console.log('View all activity')}
-                >
-                  View all activity
-                </button>
-              </div>
-            </div>
+        {/* Main dashboard content */}
+        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* Readmission Trends */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Readmission Rate Trends</h2>
+            <ReadmissionRateChart />
           </div>
           
-          {/* Prediction Accuracy Card */}
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-4 py-5 sm:p-6">
-              <h3 className="text-lg font-medium text-gray-900">Prediction Accuracy</h3>
-              <div className="mt-2 flex justify-between items-baseline">
-                <div className="text-5xl font-semibold text-gray-900">87%</div>
-                <div className="text-sm flex items-center text-green-600">
-                  <svg className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
-                  </svg>
-                  +2.5%
-                </div>
-              </div>
-              <div className="mt-4">
-                <div className="relative h-3 bg-gray-200 rounded-full">
-                  <div className="absolute h-3 rounded-full bg-blue-500" style={{ width: '87%' }}></div>
-                </div>
-              </div>
-              <div className="mt-6">
-                <button
-                  className="w-full py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  onClick={() => console.log('View analytics')}
-                >
-                  View detailed analytics
-                </button>
-              </div>
-            </div>
+          {/* Patient Risk Distribution */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Patient Risk Distribution</h2>
+            <PatientRiskDistribution />
           </div>
+          
+          {/* Department Performance */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Department Performance</h2>
+            <DepartmentPerformanceChart />
+          </div>
+          
+          {/* Prediction Accuracy */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Prediction Model Accuracy</h2>
+            <PredictionAccuracyChart />
+          </div>
+        </div>
+        
+        {/* Prediction Generator Section */}
+        <div className="mt-8">
+          <PredictionGenerator />
+        </div>
+        
+        {/* Recent activity list */}
+        <div className="mt-8 bg-white shadow rounded-lg">
+          <div className="px-4 py-5 border-b border-gray-200 sm:px-6">
+            <h3 className="text-lg font-medium leading-6 text-gray-900">Recent Activity</h3>
+          </div>
+          <ul className="divide-y divide-gray-200">
+            <li className="px-4 py-4 sm:px-6">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-indigo-600 truncate">
+                  Prediction batch completed
+                </p>
+                <div className="ml-2 flex-shrink-0 flex">
+                  <p className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                    Completed
+                  </p>
+                </div>
+              </div>
+              <div className="mt-2 sm:flex sm:justify-between">
+                <div className="sm:flex">
+                  <p className="flex items-center text-sm text-gray-500">
+                    Processed 32 patient records
+                  </p>
+                </div>
+                <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
+                  <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                  </svg>
+                  <p>2 hours ago</p>
+                </div>
+              </div>
+            </li>
+            <li className="px-4 py-4 sm:px-6">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-indigo-600 truncate">
+                  New high-risk patient identified
+                </p>
+                <div className="ml-2 flex-shrink-0 flex">
+                  <p className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                    High Risk
+                  </p>
+                </div>
+              </div>
+              <div className="mt-2 sm:flex sm:justify-between">
+                <div className="sm:flex">
+                  <p className="flex items-center text-sm text-gray-500">
+                    Patient #12489 - Cardiology Department
+                  </p>
+                </div>
+                <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
+                  <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                  </svg>
+                  <p>Today at 8:32 AM</p>
+                </div>
+              </div>
+            </li>
+          </ul>
         </div>
       </div>
     </div>
   );
 });
 
-// Export the memoized component
 export default AdminDashboard;

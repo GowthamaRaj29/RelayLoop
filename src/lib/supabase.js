@@ -122,11 +122,29 @@ async function getUserRole() {
       return identityData.role;
     }
     
-    // If we're in production and there's no role, return a default basic role
-    // to prevent the "no role" error, or return null if you want to enforce role assignment
-    return 'user';
+    // Before returning a default, check if we have a cached role
+    const cachedRole = localStorage.getItem('user_role');
+    if (cachedRole) {
+      console.log('Using cached role from localStorage when no role found:', cachedRole);
+      return cachedRole;
+    }
+    
+    // For development, return admin by default to prevent unnecessary role changes
+    if (import.meta.env.DEV) {
+      return 'admin';
+    }
+    
+    // Last resort - return null to trigger proper error handling
+    return null;
   } catch (error) {
     console.error('Error in getUserRole function:', error);
+    
+    // Try to recover from cached role first
+    const cachedRole = localStorage.getItem('user_role');
+    if (cachedRole) {
+      console.log('Recovering with cached role after error:', cachedRole);
+      return cachedRole;
+    }
     
     // For development only - provide a default role to prevent hanging
     if (import.meta.env.DEV) {

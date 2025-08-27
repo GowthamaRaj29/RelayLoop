@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
+import './font.css'; // Import the custom font CSS
 import App from './App.jsx';
 
 // Global error handler for uncaught errors

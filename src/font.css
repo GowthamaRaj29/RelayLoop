@@ -1,0 +1,7 @@
+/* Import Montserrat Alternates font */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@400;500;600;700&display=swap');
+
+/* Apply the font to any elements with the class */
+.font-montserrat-alternates {
+  font-family: 'Montserrat Alternates', sans-serif;
+}

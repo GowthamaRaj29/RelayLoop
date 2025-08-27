@@ -163,6 +163,7 @@ export default function LoginForm() {
         <input
           id="email"
           type="email"
+          placeholder='Enter your Email'
           autoComplete="username" /* Security best practice */
           spellCheck="false"
           autoCapitalize="none"
@@ -189,6 +190,7 @@ export default function LoginForm() {
           <input
             id="password"
             type={showPassword ? 'text' : 'password'}
+            placeholder='Enter your Password'
             autoComplete="current-password"
             className={`w-full px-3 py-2 border rounded-md shadow-sm text-gray-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
               errors.password ? 'border-red-300' : 'border-gray-300'
@@ -219,46 +221,66 @@ export default function LoginForm() {
         )}
       </div>
       
-      <div className="flex items-center justify-between">
-        <div className="flex items-center">
-          <input
-            id="remember-me"
-            name="remember-me"
-            type="checkbox"
-            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-          />
-          <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-            Remember me
-          </label>
-        </div>
-        
-        <div className="text-sm">
-          {/* Using button instead of anchor for better security */}
-          <button 
-            type="button"
-            className="font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:underline"
-            onClick={() => {
-              // In a real app, this would navigate to the forgot password page
-              console.log('Navigate to forgot password');
-            }}
-          >
-            Forgot your password?
-          </button>
-        </div>
-      </div>
+      
       
       <div>
         <button
           type="submit"
           disabled={isLoading || (lockedUntil && Date.now() < lockedUntil)}
-          className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+          className={`w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
             (isLoading || (lockedUntil && Date.now() < lockedUntil)) ? 'opacity-70 cursor-not-allowed' : ''
           }`}
           aria-busy={isLoading}
         >
-          {isLoading ? 'Signing in...' : 'Sign in'}
+          {isLoading ? (
+            <>
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Signing in...</span>
+            </>
+          ) : (
+            'Sign in'
+          )}
         </button>
       </div>
+      
+      {/* Debug button - only visible in development mode */}
+      {import.meta.env.DEV && (
+        <div className="mt-2">
+          <button
+            type="button"
+            onClick={() => {
+              try {
+                // Show current localStorage state in console
+                console.group('Auth State Before Reset');
+                console.log('Local Storage - user_role:', localStorage.getItem('user_role'));
+                console.log('Local Storage - user_data:', localStorage.getItem('user_data'));
+                console.log('Session Storage - redirectPath:', sessionStorage.getItem('redirectPath'));
+                console.groupEnd();
+                
+                // Clean local storage
+                localStorage.removeItem('user_role');
+                localStorage.removeItem('user_data');
+                sessionStorage.removeItem('redirectPath');
+                
+                console.log('Auth storage cleared. Refreshing page...');
+                
+                // Refresh to reset all state
+                alert('Auth state has been reset. The page will now refresh.');
+                window.location.reload();
+              } catch (e) {
+                console.error('Debug action failed:', e);
+                alert('Auth reset completed but encountered an error: ' + e.message);
+              }
+            }}
+            className="w-full flex justify-center py-1 px-2 border border-transparent rounded-md shadow-sm text-xs font-medium text-white bg-gray-500 hover:bg-gray-600 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-gray-400"
+          >
+            Debug: Reset Auth State
+          </button>
+        </div>
+      )}
     </form>
   );
 }

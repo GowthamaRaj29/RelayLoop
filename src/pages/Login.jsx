@@ -5,7 +5,7 @@ import LoginForm from '../components/forms/LoginForm';
 import { RouteDebugger } from '../components/debug/RouteDebugger';
 
 export default function Login() {
-  const { user, role, isLoading, error } = useAuth();
+  const { user, role, isLoading, error, signOut } = useAuth();
   const navigate = useNavigate();
   const [renderError, setRenderError] = useState(null);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
@@ -57,9 +57,33 @@ export default function Login() {
   useEffect(() => {
     try {
       if (!isLoading && user) {
-        if (role) {
-          console.log("Redirecting to dashboard based on role:", role);
-          switch(role) {
+        console.log("Login: Authenticated user detected", { hasRole: !!role, role });
+        
+        // Try to get a cached role first if current role is null
+        let effectiveRole = role;
+        if (!effectiveRole) {
+          const cachedRole = localStorage.getItem('user_role');
+          console.log("Login: No current role, checking cached role:", cachedRole);
+          if (cachedRole) {
+            effectiveRole = cachedRole;
+            console.log("Login: Using cached role:", effectiveRole);
+          }
+        }
+        
+        // Check if there's a saved redirect path
+        const redirectPath = sessionStorage.getItem('redirectPath');
+        
+        if (redirectPath) {
+          // Clear it so we don't redirect again on subsequent navigations
+          sessionStorage.removeItem('redirectPath');
+          console.log("Redirecting to previously requested page:", redirectPath);
+          navigate(redirectPath);
+        } else if (effectiveRole) {
+          // Always make sure the role is cached for persistence
+          localStorage.setItem('user_role', effectiveRole);
+          console.log("Redirecting to dashboard based on role:", effectiveRole);
+          
+          switch(effectiveRole) {
             case 'admin':
               navigate('/admin/dashboard');
               break;
@@ -70,25 +94,30 @@ export default function Login() {
               navigate('/nurse/patients');
               break;
             default:
-              // Fallback to a common dashboard if role is unknown
-              console.warn('Unknown user role:', role);
-              navigate('/dashboard');
+              // Show error alert for unknown role
+              console.warn('Unknown user role:', effectiveRole);
+              setRenderError("Your account doesn't have a recognized role. Please contact an administrator.");
+              // Sign out the user if they have an unrecognized role
+              localStorage.removeItem('user_role');
+              signOut?.();
+              return;
           }
         } else {
           // User has authenticated but no specific role was determined
-          // Instead of showing an error, we'll direct them to a generic dashboard
-          // and let the backend/permissions handle access control
-          console.debug('Using default user role for authenticated user');
+          console.warn('No role determined for authenticated user');
           
-          // Route to a generic dashboard for users without specific roles
-          navigate('/dashboard');
+          // Show error for users without roles
+          setRenderError("Your account doesn't have a role assigned. Please contact an administrator.");
+          // Sign out the user
+          localStorage.removeItem('user_role');
+          signOut?.();
         }
       }
     } catch (err) {
       console.error('Error in navigation effect:', err);
       setRenderError(err.message);
     }
-  }, [user, role, isLoading, navigate]);
+  }, [user, role, isLoading, navigate, signOut]);
   
   // Display render errors if any
   if (renderError) {
@@ -134,7 +163,7 @@ export default function Login() {
             src="/relyloop.svg"
             alt="RelyLoop Logo"
           />
-          <h2 className="mt-6 text-center text-3xl font-medium text-gray-900 font-family: 'Montserrat Alternates', sans-serif;">
+          <h2 className="mt-6 text-center text-3xl font-medium text-gray-900 font-montserrat-alternates">
             Sign in to RelyLoop
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">

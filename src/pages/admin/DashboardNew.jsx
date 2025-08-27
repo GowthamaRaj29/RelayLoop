@@ -58,13 +58,6 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
         <h1 className="text-2xl font-semibold text-gray-900">Admin Dashboard</h1>
         
-        {/* Debug info */}
-        {import.meta.env.DEV && (
-          <div className="mt-2 p-2 bg-blue-50 text-blue-700 rounded-md text-sm">
-            Dashboard component rendered successfully
-          </div>
-        )}
-        
         {/* Stats cards */}
         {isLoading ? (
           <div className="mt-6 grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">

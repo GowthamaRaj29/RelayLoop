@@ -27,18 +27,25 @@ export default {
           950: '#082f49',
         },
       },
+      fontFamily: {
+        'montserrat-alternates': ['"Montserrat Alternates"', 'sans-serif'],
+      },
     },
   },
   plugins: [
     function({ addBase }) {
       addBase({
         'html': { 
-          fontFamily: 'system-ui, Avenir, Helvetica, Arial, sans-serif,"Montserrat Alternates", sans-serif;',
+          fontFamily: 'system-ui, Avenir, Helvetica, Arial, sans-serif',
           lineHeight: '1.5',
           fontWeight: '400',
           colorScheme: 'light dark',
           backgroundColor: '#f9fafb',
         },
+        '@font-face': {
+          fontFamily: '"Montserrat Alternates"',
+          src: 'url("https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@400;500;600;700&display=swap")'
+        }
       });
     }
   ],

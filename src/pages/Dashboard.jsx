@@ -72,15 +72,15 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-500">Email</p>
-                <p className="font-medium">{user.email}</p>
+                <p className="font-medium text-black">{user.email}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">User ID</p>
-                <p className="font-medium text-xs">{user.id}</p>
+                <p className="font-medium text-xs text-black">{user.id}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Last Sign In</p>
-                <p className="font-medium">
+                <p className="font-medium text-black">
                   {user.last_sign_in_at 
                     ? new Date(user.last_sign_in_at).toLocaleString() 
                     : 'First login'}
@@ -88,7 +88,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Access Level</p>
-                <p className="font-medium">{role || 'Standard User'}</p>
+                <p className="font-medium text-black">{role || 'Standard User'}</p>
               </div>
             </div>
           </div>

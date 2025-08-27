@@ -83,17 +83,102 @@ export function checkAppState(providers = {}) {
  * @param {Object} appState Current application state
  * @returns {Object} All diagnostic results
  */
+/**
+ * Diagnose authentication issues by examining storage, session, and context state
+ * @param {Object} authState Current authentication state from AuthContext
+ * @returns {Object} Diagnostic information about authentication
+ */
+export function diagnoseAuthIssues(authState = {}) {
+  const { user, role, isLoading, error } = authState;
+  
+  // Check stored values
+  const localStorage_user = localStorage.getItem('user_data');
+  const localStorage_role = localStorage.getItem('user_role');
+  const sessionStorage_redirectPath = sessionStorage.getItem('redirectPath');
+  
+  // Parse stored user if it exists
+  let parsedStoredUser = null;
+  try {
+    if (localStorage_user) {
+      parsedStoredUser = JSON.parse(localStorage_user);
+    }
+  } catch (e) {
+    console.error('Error parsing stored user data:', e);
+  }
+  
+  // Gather diagnostics
+  const diagnostics = {
+    context: {
+      hasUser: !!user,
+      userEmail: user?.email,
+      userId: user?.id,
+      currentRole: role,
+      isLoading,
+      hasError: !!error,
+      errorMessage: error,
+    },
+    storage: {
+      localStorage: {
+        hasUserData: !!localStorage_user,
+        userDataValid: !!parsedStoredUser,
+        userEmail: parsedStoredUser?.email,
+        userId: parsedStoredUser?.id,
+        storedRole: localStorage_role,
+      },
+      sessionStorage: {
+        hasRedirectPath: !!sessionStorage_redirectPath,
+        redirectPath: sessionStorage_redirectPath,
+      },
+    },
+    consistency: {
+      userMatch: user?.id === parsedStoredUser?.id,
+      roleMatch: role === localStorage_role,
+      hasValidAuth: !!user && !!role,
+      recommendation: '',
+    },
+    timestamp: new Date().toISOString(),
+  };
+  
+  // Generate recommendations
+  if (!diagnostics.consistency.userMatch && user && parsedStoredUser) {
+    diagnostics.consistency.recommendation = 'User mismatch between context and storage. Clear storage data and re-login.';
+  } else if (!diagnostics.consistency.roleMatch && role && localStorage_role) {
+    diagnostics.consistency.recommendation = 'Role mismatch between context and storage. Update localStorage role to match context.';
+  } else if (!role && localStorage_role) {
+    diagnostics.consistency.recommendation = 'Role missing in context but present in storage. Try refreshing the page or re-login.';
+  } else if (role && !localStorage_role) {
+    diagnostics.consistency.recommendation = 'Role present in context but missing in storage. Update localStorage with current role.';
+  }
+  
+  console.group('Authentication Diagnostics');
+  console.log('Context State:', diagnostics.context);
+  console.log('Storage State:', diagnostics.storage);
+  console.log('Consistency Checks:', diagnostics.consistency);
+  console.log('Recommendation:', diagnostics.consistency.recommendation || 'No issues detected.');
+  console.groupEnd();
+  
+  return diagnostics;
+}
+
 export function runAllDiagnostics(appState = {}) {
   console.group('RelayLoop Application Diagnostics');
   const env = checkEnvironmentVariables();
   const browser = checkBrowserCompatibility();
   const app = checkAppState(appState);
+  
+  // Include auth diagnostics if auth state is provided
+  let auth = null;
+  if (appState.auth) {
+    auth = diagnoseAuthIssues(appState.auth);
+  }
+  
   console.groupEnd();
 
   return {
     environment: env,
     browser,
     application: app,
+    auth,
     timestamp: new Date().toISOString(),
   };
 }
