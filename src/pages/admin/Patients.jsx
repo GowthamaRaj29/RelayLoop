@@ -1,0 +1,369 @@
+import { useState, useEffect } from 'react';
+import { useAuth } from '../../hooks/useAuth';
+
+export default function Patients() {
+  const { role } = useAuth();
+  const [patients, setPatients] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [riskFilter, setRiskFilter] = useState('all');
+  
+  useEffect(() => {
+    fetchPatients();
+  }, []);
+  
+  const fetchPatients = async () => {
+    try {
+      setIsLoading(true);
+      
+      // In a real app, this would fetch from Supabase
+      // const { data, error } = await supabase
+      //   .from('patients')
+      //   .select('*')
+      //   .order('last_name', { ascending: true });
+      
+      // if (error) throw error;
+      
+      // Mock data
+      const mockPatients = [
+        {
+          id: '1',
+          first_name: 'John',
+          last_name: 'Doe',
+          dob: '1980-05-15',
+          gender: 'Male',
+          mrn: 'MRN12345',
+          risk_score: 0.82,
+          risk_level: 'high',
+          last_admission: '2023-07-20',
+          attending_doctor: 'Dr. Smith',
+          department: 'Cardiology'
+        },
+        {
+          id: '2',
+          first_name: 'Jane',
+          last_name: 'Smith',
+          dob: '1975-11-08',
+          gender: 'Female',
+          mrn: 'MRN12346',
+          risk_score: 0.35,
+          risk_level: 'medium',
+          last_admission: '2023-08-05',
+          attending_doctor: 'Dr. Johnson',
+          department: 'Neurology'
+        },
+        {
+          id: '3',
+          first_name: 'Robert',
+          last_name: 'Williams',
+          dob: '1990-03-22',
+          gender: 'Male',
+          mrn: 'MRN12347',
+          risk_score: 0.15,
+          risk_level: 'low',
+          last_admission: '2023-08-15',
+          attending_doctor: 'Dr. Davis',
+          department: 'General'
+        },
+        {
+          id: '4',
+          first_name: 'Emily',
+          last_name: 'Johnson',
+          dob: '1988-12-10',
+          gender: 'Female',
+          mrn: 'MRN12348',
+          risk_score: 0.92,
+          risk_level: 'high',
+          last_admission: '2023-08-01',
+          attending_doctor: 'Dr. Wilson',
+          department: 'Oncology'
+        },
+        {
+          id: '5',
+          first_name: 'Michael',
+          last_name: 'Brown',
+          dob: '1965-07-28',
+          gender: 'Male',
+          mrn: 'MRN12349',
+          risk_score: 0.45,
+          risk_level: 'medium',
+          last_admission: '2023-07-10',
+          attending_doctor: 'Dr. Taylor',
+          department: 'Cardiology'
+        },
+      ];
+      
+      setPatients(mockPatients);
+    } catch (err) {
+      console.error('Error fetching patients:', err);
+      setError('Failed to load patient data. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Filter patients based on search term and risk filter
+  const filteredPatients = patients.filter(patient => {
+    const matchesSearch = searchTerm === '' || 
+      patient.first_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      patient.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      patient.mrn.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesRisk = riskFilter === 'all' || patient.risk_level === riskFilter;
+    
+    return matchesSearch && matchesRisk;
+  });
+  
+  return (
+    <div className="py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+        <h1 className="text-2xl font-semibold text-gray-900">Patients</h1>
+        
+        <div className="mt-6">
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-4">
+            <div className="flex-1">
+              <label htmlFor="search" className="sr-only">
+                Search patients
+              </label>
+              <div className="relative rounded-md shadow-sm">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <SearchIcon className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  name="search"
+                  id="search"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
+                  placeholder="Search by name or MRN"
+                />
+              </div>
+            </div>
+            
+            <div className="flex flex-shrink-0">
+              <label htmlFor="risk-filter" className="sr-only">
+                Filter by risk level
+              </label>
+              <select
+                id="risk-filter"
+                name="risk-filter"
+                value={riskFilter}
+                onChange={(e) => setRiskFilter(e.target.value)}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              >
+                <option value="all">All Risk Levels</option>
+                <option value="high">High Risk</option>
+                <option value="medium">Medium Risk</option>
+                <option value="low">Low Risk</option>
+              </select>
+            </div>
+            
+            <button
+              type="button"
+              onClick={() => console.log('Add new patient')}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Add Patient
+            </button>
+          </div>
+          
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-300 rounded-md text-red-700">
+              <p>{error}</p>
+              <button 
+                onClick={fetchPatients}
+                className="mt-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+          
+          <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Patient
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    MRN
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Risk Level
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Department
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Last Admission
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Doctor
+                  </th>
+                  <th scope="col" className="relative px-6 py-3">
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {isLoading ? (
+                  // Loading skeletons
+                  [...Array(5)].map((_, index) => (
+                    <tr key={`loading-${index}`}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 rounded-full bg-gray-200 animate-pulse"></div>
+                          <div className="ml-4">
+                            <div className="h-4 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
+                            <div className="h-3 bg-gray-200 rounded w-32 animate-pulse"></div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="h-4 bg-gray-200 rounded w-16 animate-pulse"></div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="h-4 bg-gray-200 rounded w-28 animate-pulse"></div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="h-4 bg-gray-200 rounded w-16 ml-auto animate-pulse"></div>
+                      </td>
+                    </tr>
+                  ))
+                ) : filteredPatients.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
+                      No patients found matching your search criteria.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredPatients.map((patient) => (
+                    <tr key={patient.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700">
+                            {patient.first_name.charAt(0)}{patient.last_name.charAt(0)}
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {patient.first_name} {patient.last_name}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {patient.gender}, {calculateAge(patient.dob)} years
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {patient.mrn}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <RiskBadge riskLevel={patient.risk_level} riskScore={patient.risk_score} />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {patient.department}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDate(patient.last_admission)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {patient.attending_doctor}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button 
+                          onClick={() => console.log(`View patient ${patient.id}`)}
+                          className="text-indigo-600 hover:text-indigo-900 mr-4"
+                        >
+                          View
+                        </button>
+                        <button 
+                          onClick={() => console.log(`Edit patient ${patient.id}`)}
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Helper components
+function RiskBadge({ riskLevel, riskScore }) {
+  let colorClass;
+  
+  switch (riskLevel) {
+    case 'high':
+      colorClass = 'bg-red-100 text-red-800';
+      break;
+    case 'medium':
+      colorClass = 'bg-yellow-100 text-yellow-800';
+      break;
+    case 'low':
+      colorClass = 'bg-green-100 text-green-800';
+      break;
+    default:
+      colorClass = 'bg-gray-100 text-gray-800';
+  }
+  
+  return (
+    <div className="flex items-center">
+      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${colorClass}`}>
+        {riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1)}
+      </span>
+      <span className="ml-2 text-gray-500 text-xs">{Math.round(riskScore * 100)}%</span>
+    </div>
+  );
+}
+
+// Helper functions
+function calculateAge(dob) {
+  const birthDate = new Date(dob);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  
+  return age;
+}
+
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// Icons
+const SearchIcon = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+  </svg>
+);
+
+const PlusIcon = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+  </svg>
+);
