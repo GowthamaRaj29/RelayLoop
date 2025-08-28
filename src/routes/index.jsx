@@ -5,6 +5,7 @@ import AdminLayout from '../components/layout/AdminLayout';
 import AdminDashboard from '../pages/admin/Dashboard';
 import UserManagement from '../pages/admin/UserManagement';
 import SystemSettings from '../pages/admin/Settings';
+import AdminProfile from '../pages/admin/Profile';
 import Patients from '../pages/admin/Patients';
 import PatientDetails from '../pages/admin/PatientDetails';
 import Departments from '../pages/admin/Departments';
@@ -30,6 +31,7 @@ export default function AppRoutes() {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="dashboardnew" element={<AdminDashboard />} />
           <Route path="users" element={<UserManagement />} />
+          <Route path="profile" element={<AdminProfile />} />
           <Route path="patients" element={<Patients />} />
           <Route path="patients/:patientId" element={<PatientDetails />} />
           <Route path="departments" element={<Departments />} />

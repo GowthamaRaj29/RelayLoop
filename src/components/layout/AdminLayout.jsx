@@ -1,4 +1,4 @@
-import { useState, memo, useMemo, useEffect } from 'react';
+import { useState, memo, useMemo, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
@@ -8,6 +8,8 @@ import RoleVerificationOverlay from '../ui/RoleVerificationOverlay';
 const AdminLayout = memo(function AdminLayout() {
   const { user, role, signOut, isLoading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const profileDropdownRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -102,6 +104,20 @@ const AdminLayout = memo(function AdminLayout() {
     verifyAdminAccess();
   }, [role, navigate, isLoading, user, verificationState.verified, verificationState.inProgress, verificationState.retryCount]);
   
+  // Handle profile dropdown click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
+        setProfileDropdownOpen(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [profileDropdownRef]);
+  
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -109,6 +125,10 @@ const AdminLayout = memo(function AdminLayout() {
     } catch (error) {
       console.error('Error signing out:', error);
     }
+  };
+  
+  const toggleProfileDropdown = () => {
+    setProfileDropdownOpen(prevState => !prevState);
   };
 
   // Memoize navigation items to prevent unnecessary recalculations
@@ -118,6 +138,12 @@ const AdminLayout = memo(function AdminLayout() {
       path: '/admin/dashboard', 
       icon: DashboardIcon,
       current: location.pathname === '/admin/dashboard'
+    },
+    { 
+      name: 'Profile', 
+      path: '/admin/profile', 
+      icon: UsersIcon,
+      current: location.pathname === '/admin/profile'
     },
     { 
       name: 'Users Management', 
@@ -197,36 +223,56 @@ const AdminLayout = memo(function AdminLayout() {
       {sidebarOpen && (
         <div 
           className="fixed inset-0 z-40 flex md:hidden" 
-          onClick={() => setSidebarOpen(false)}
+          onClick={(e) => {
+            // Only close if clicking the backdrop, not the sidebar itself
+            if (e.target === e.currentTarget) {
+              setSidebarOpen(false);
+            }
+          }}
         >
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-75" aria-hidden="true"></div>
+          {/* Enhanced backdrop with stronger blur effect */}
+          <div 
+            className={`fixed inset-0 bg-gray-900/60 backdrop-blur-md transition-opacity ease-in-out duration-300 ${
+              sidebarOpen ? 'opacity-100' : 'opacity-0'
+            }`} 
+            aria-hidden="true"
+          ></div>
           
-          <div className="relative flex-1 flex flex-col max-w-xs w-full pt-5 pb-4 bg-white shadow-xl shadow-gray-500/50 after:absolute after:top-0 after:right-0 after:bottom-0 after:w-[8px] after:bg-gradient-to-r after:from-transparent after:via-gray-300/70 after:to-gray-400/50 after:content-['']">
-            <div className="absolute top-0 right-0 -mr-12 pt-2">
+          <div className={`relative flex-1 flex flex-col max-w-xs w-full bg-white shadow-xl shadow-gray-500/50 transition-all duration-300 ease-in-out transform ${
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}>
+            
+            {/* Header with logo and close button */}
+            <div className="flex-shrink-0 flex items-center justify-between px-4 py-4 bg-gradient-to-r from-blue-50 to-white border-b border-gray-100">
+              <div className="flex items-center">
+                <img
+                  className="h-8 w-auto"
+                  src="/relyloop.svg"
+                  alt="RelyLoop"
+                />
+                <div className="ml-2">
+                  <span className="text-xl font-bold text-gray-800 font-montserrat-alternates">RelyLoop</span>
+                  <div className="text-xs bg-blue-800 text-white px-2 py-0.5 rounded inline-block ml-2">Healthcare</div>
+                </div>
+              </div>
+              
+              {/* Close button inside the sidebar with improved styling */}
               <button
                 type="button"
-                className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-                onClick={() => setSidebarOpen(false)}
+                className="ml-2 p-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 hover:scale-105 transform active:scale-95"
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent event bubbling
+                  setSidebarOpen(false);
+                }}
+                aria-label="Close sidebar"
               >
                 <span className="sr-only">Close sidebar</span>
-                <XIcon className="h-6 w-6 text-white" />
+                <XIcon className="h-5 w-5" />
               </button>
             </div>
             
-            <div className="flex-shrink-0 flex items-center px-4 border-b border-gray-100 pb-4">
-              <img
-                className="h-8 w-auto"
-                src="/relyloop.svg"
-                alt="RelyLoop"
-              />
-              <div className="ml-2">
-                <span className="text-xl font-bold text-gray-800 font-montserrat-alternates">RelyLoop</span>
-                <div className="text-xs bg-blue-800 text-white px-2 py-0.5 rounded inline-block ml-2">Healthcare</div>
-              </div>
-            </div>
-            
-            <div className="mt-5 flex-1 h-0 overflow-y-auto">
-              <nav className="px-2 space-y-1">
+            <div className="flex-1 h-0 overflow-y-auto">
+              <nav className="px-3 pt-4 space-y-1">
                 {navigation
                   .filter(item => !item.adminOnly || role === 'admin')
                   .map((item) => (
@@ -236,13 +282,14 @@ const AdminLayout = memo(function AdminLayout() {
                       className={`${
                         item.current
                           ? 'bg-blue-900 text-white shadow-md'
-                          : 'text-gray-600 hover:bg-blue-100 hover:shadow'
-                      } group flex items-center px-2 py-3 text-sm font-medium rounded-md transition-all duration-150`}
+                          : 'text-gray-600 hover:bg-blue-50 hover:text-blue-800 hover:shadow-sm'
+                      } group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-all duration-150`}
+                      onClick={() => setSidebarOpen(false)}
                     >
                       <item.icon
                         className={`${
-                          item.current ? 'text-white' : 'text-gray-400 group-hover:text-gray-400'
-                        } mr-4 flex-shrink-0 h-5 w-5`}
+                          item.current ? 'text-white' : 'text-gray-400 group-hover:text-blue-500'
+                        } mr-3 flex-shrink-0 h-5 w-5`}
                         aria-hidden="true"
                       />
                       {item.name}
@@ -278,6 +325,30 @@ const AdminLayout = memo(function AdminLayout() {
                   </div>
                 )}
               </nav>
+
+              {/* Mobile sidebar footer */}
+              <div className="px-3 py-4 mt-auto border-t border-gray-200 bg-gray-50">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-800 font-medium">
+                      {user?.email?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-gray-700 truncate">{user?.email || 'User'}</p>
+                    <p className="text-xs text-gray-500 truncate">{role || 'User'} role</p>
+                  </div>
+                  <button
+                    onClick={handleSignOut}
+                    className="ml-auto inline-flex items-center p-1.5 border border-gray-300 rounded-md text-xs text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <svg className="h-3.5 w-3.5 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Sign Out
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -331,8 +402,9 @@ const AdminLayout = memo(function AdminLayout() {
         <div className="relative z-10 flex-shrink-0 flex h-16 bg-white shadow-sm">
           <button
             type="button"
-            className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-500 md:hidden"
+            className="p-2 mx-2 my-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 rounded-md transition-colors duration-200 md:hidden"
             onClick={() => setSidebarOpen(true)}
+            aria-label="Open sidebar"
           >
             <span className="sr-only">Open sidebar</span>
             <MenuAlt2Icon className="h-6 w-6" aria-hidden="true" />
@@ -352,44 +424,116 @@ const AdminLayout = memo(function AdminLayout() {
             <div className="ml-4 flex items-center md:ml-6">
 
               {/* Profile dropdown */}
-              <div className="ml-3 relative">
-                <div className="group relative">
-                  <button
-                    type="button"
-                    className="max-w-xs bg-white flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
-                    id="user-menu"
-                    aria-expanded="false"
-                  >
-                    <span className="sr-only">Open user menu</span>
-                    <div className="h-8 w-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-800 font-medium">
-                      {user?.email?.charAt(0).toUpperCase() || 'U'}
-                    </div>
-                    <span className="ml-2 text-gray-700">{user?.email || 'User'}</span>
-                    <span className="ml-2 text-xs px-2 py-0.5 bg-teal-100 text-teal-800 rounded-full">
-                      {role || 'User'}
-                    </span>
-                  </button>
-                  <div className="hidden group-hover:block origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
-                    <Link
-                      to="/admin/profile"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Your Profile
-                    </Link>
-                    <Link
-                      to="/admin/settings"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Settings
-                    </Link>
-                    <div className="border-t border-gray-100 my-1"></div>
-                    <button
-                      onClick={handleSignOut}
-                      className="block w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50"
-                    >
-                      Sign Out
-                    </button>
+              <div className="ml-3 static sm:relative" ref={profileDropdownRef}>
+                <button
+                  type="button"
+                  className="max-w-xs bg-white/80 backdrop-blur-sm flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 hover:bg-blue-50/80 p-1.5 relative z-10 shadow-sm border border-gray-100/70"
+                  id="user-menu"
+                  aria-expanded={profileDropdownOpen}
+                  onClick={toggleProfileDropdown}
+                >
+                  <span className="sr-only">Open user menu</span>
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center text-blue-800 font-medium shadow-sm">
+                    {user?.email?.charAt(0).toUpperCase() || 'U'}
                   </div>
+                  <div className="mx-2 text-left hidden sm:block max-w-[150px] md:max-w-[200px]">
+                    <p className="text-sm text-gray-800 truncate font-medium">{user?.email || 'User'}</p>
+                    <p className="text-xs text-gray-600 truncate flex items-center">
+                      <span className="h-1.5 w-1.5 rounded-full bg-green-500 mr-1"></span>
+                      <span className="font-medium text-blue-700">{role || 'User'}</span>
+                    </p>
+                  </div>
+                  <svg 
+                    className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${profileDropdownOpen ? 'transform rotate-180' : ''}`} 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    viewBox="0 0 20 20" 
+                    fill="currentColor"
+                  >
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+                
+                {/* Dropdown menu - animates in and out */}
+                {/* Mobile backdrop with blur effect */}
+                {profileDropdownOpen && (
+                  <div 
+                    className="fixed inset-0 bg-gray-900/60 backdrop-blur-md transition-opacity ease-in-out duration-300 sm:hidden z-40" 
+                    onClick={() => setProfileDropdownOpen(false)}
+                  ></div>
+                )}
+                
+                <div 
+                  className={`
+                    origin-top-right fixed sm:absolute inset-x-0 top-16 sm:top-auto sm:right-0 sm:left-auto sm:mt-2 mx-2 sm:mx-0 w-auto sm:w-56 md:w-64 rounded-lg shadow-xl py-1 
+                    bg-white/90 backdrop-blur-lg ring-1 ring-gray-100 focus:outline-none z-50
+                    transition-all duration-200 ease-in-out transform
+                    ${profileDropdownOpen 
+                      ? 'opacity-100 scale-100 translate-y-0' 
+                      : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'}
+                  `}
+                  role="menu"
+                  aria-orientation="vertical"
+                  aria-labelledby="user-menu"
+                >
+                  <div className="px-4 py-3 border-b border-gray-100/50 bg-gradient-to-r from-blue-50/80 to-white/80 rounded-t-lg">
+                    <p className="text-sm font-medium text-gray-900 truncate">{user?.email || 'User'}</p>
+                    <div className="flex items-center mt-1">
+                      <div className="h-2.5 w-2.5 rounded-full bg-green-400 mr-1.5"></div>
+                      <p className="text-xs text-gray-500">
+                        <span className="font-medium text-teal-600">{role || 'User'}</span> account
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <Link
+                    to="/admin/profile"
+                    className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50/70 transition-colors duration-150 mx-1 rounded-md"
+                    role="menuitem"
+                  >
+                    <div className="mr-3 h-8 w-8 rounded-full bg-blue-100/70 flex items-center justify-center">
+                      <svg className="h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-medium">Your Profile</p>
+                      <p className="text-xs text-gray-500">View and edit your profile</p>
+                    </div>
+                  </Link>
+                  
+                  <Link
+                    to="/admin/settings"
+                    className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50/70 transition-colors duration-150 mx-1 rounded-md"
+                    role="menuitem"
+                  >
+                    <div className="mr-3 h-8 w-8 rounded-full bg-blue-100/70 flex items-center justify-center">
+                      <svg className="h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-medium">Settings</p>
+                      <p className="text-xs text-gray-500">Configure app settings</p>
+                    </div>
+                  </Link>
+                  
+                  <div className="border-t border-gray-100/50 my-1 mx-3"></div>
+                  
+                  <button
+                    onClick={handleSignOut}
+                    className="flex items-center w-full text-left px-4 py-3 text-sm text-red-700 hover:bg-red-50/70 transition-colors duration-150 mx-1 rounded-md group"
+                    role="menuitem"
+                  >
+                    <div className="mr-3 h-8 w-8 rounded-full bg-red-100/70 flex items-center justify-center">
+                      <svg className="h-4 w-4 text-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H3zm10 9v-3a1 1 0 10-2 0v3H9l3 3 3-3h-2zm-7-4h2v-3h2V5H6v3z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-medium group-hover:text-red-800">Sign Out</p>
+                      <p className="text-xs text-red-500/70">Log out of your account</p>
+                    </div>
+                  </button>
                 </div>
               </div>
             </div>
@@ -492,5 +636,11 @@ const ServerIcon = memo(({ className }) => (
 const DocumentTextIcon = memo(({ className }) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+  </svg>
+));
+
+const UserIcon = memo(({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
   </svg>
 ));

@@ -22,7 +22,7 @@ export default function UserManagement() {
       // In a production app, we would fetch real data from Supabase
       // const { data, error } = await supabase
       //   .from('profiles')
-      //   .select('id, email, first_name, last_name, role, created_at')
+      //   .select('id, email, first_name, last_name, department, role, created_at')
       //   .order('created_at', { ascending: false });
       
       // if (error) throw error;
@@ -35,6 +35,7 @@ export default function UserManagement() {
           first_name: 'Admin',
           last_name: 'User',
           role: 'admin',
+          department: 'IT Administration',
           created_at: '2023-08-01T10:00:00Z',
           status: 'active'
         },
@@ -44,6 +45,7 @@ export default function UserManagement() {
           first_name: 'John',
           last_name: 'Smith',
           role: 'doctor',
+          department: 'Cardiology',
           created_at: '2023-08-05T14:30:00Z',
           status: 'active'
         },
@@ -53,6 +55,7 @@ export default function UserManagement() {
           first_name: 'Sarah',
           last_name: 'Johnson',
           role: 'nurse',
+          department: 'Emergency Care',
           created_at: '2023-08-10T09:15:00Z',
           status: 'active'
         },
@@ -62,6 +65,7 @@ export default function UserManagement() {
           first_name: 'Robert',
           last_name: 'Williams',
           role: 'doctor',
+          department: 'Neurology',
           created_at: '2023-08-12T11:20:00Z',
           status: 'inactive'
         },
@@ -71,6 +75,7 @@ export default function UserManagement() {
           first_name: 'Emily',
           last_name: 'Davis',
           role: 'nurse',
+          department: 'Pediatrics',
           created_at: '2023-08-15T16:45:00Z',
           status: 'pending'
         }
@@ -116,6 +121,7 @@ export default function UserManagement() {
       //   .update({
       //     first_name: updatedUser.first_name,
       //     last_name: updatedUser.last_name,
+      //     department: updatedUser.department,
       //     role: updatedUser.role,
       //     status: updatedUser.status
       //   })
@@ -153,6 +159,7 @@ export default function UserManagement() {
       //   email: newUser.email,
       //   first_name: newUser.first_name,
       //   last_name: newUser.last_name,
+      //   department: newUser.department,
       //   role: newUser.role,
       //   status: 'pending'
       // });
@@ -206,112 +213,126 @@ export default function UserManagement() {
           <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
             <div className="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
               <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        User
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Role
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Created At
-                      </th>
-                      <th scope="col" className="relative px-6 py-3">
-                        <span className="sr-only">Actions</span>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {isLoading ? (
-                      // Loading skeletons
-                      [...Array(5)].map((_, index) => (
-                        <tr key={`loading-${index}`}>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="h-10 w-10 rounded-full bg-gray-200 animate-pulse"></div>
-                              <div className="ml-4">
-                                <div className="h-4 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
-                                <div className="h-3 bg-gray-200 rounded w-32 animate-pulse"></div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="h-4 bg-gray-200 rounded w-16 animate-pulse"></div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="h-4 bg-gray-200 rounded w-28 animate-pulse"></div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <div className="h-4 bg-gray-200 rounded w-16 ml-auto animate-pulse"></div>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      users.map((user) => (
-                        <tr key={user.id}>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0 h-10 w-10">
-                                <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
-                                  {user.first_name.charAt(0)}{user.last_name.charAt(0)}
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          User
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                          Department
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Role
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                          Created At
+                        </th>
+                        <th scope="col" className="relative px-6 py-3">
+                          <span className="sr-only">Actions</span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {isLoading ? (
+                        // Loading skeletons
+                        [...Array(5)].map((_, index) => (
+                          <tr key={`loading-${index}`}>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="h-10 w-10 rounded-full bg-gray-200 animate-pulse"></div>
+                                <div className="ml-4">
+                                  <div className="h-4 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
+                                  <div className="h-3 bg-gray-200 rounded w-32 animate-pulse"></div>
                                 </div>
                               </div>
-                              <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900">
-                                  {user.first_name} {user.last_name}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
+                              <div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="h-4 bg-gray-200 rounded w-16 animate-pulse"></div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
+                              <div className="h-4 bg-gray-200 rounded w-28 animate-pulse"></div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              <div className="h-4 bg-gray-200 rounded w-16 ml-auto animate-pulse"></div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        users.map((user) => (
+                          <tr key={user.id}>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-10 w-10">
+                                  <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
+                                    {user.first_name.charAt(0)}{user.last_name.charAt(0)}
+                                  </div>
                                 </div>
-                                <div className="text-sm text-gray-500">
-                                  {user.email}
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {user.first_name} {user.last_name}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {user.email}
+                                  </div>
+                                  <div className="text-sm text-gray-500 md:hidden">
+                                    {user.department}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                              ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 
-                                user.role === 'doctor' ? 'bg-blue-100 text-blue-800' : 
-                                'bg-green-100 text-green-800'}`}>
-                              {user.role}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                              ${user.status === 'active' ? 'bg-green-100 text-green-800' : 
-                                user.status === 'inactive' ? 'bg-red-100 text-red-800' : 
-                                'bg-yellow-100 text-yellow-800'}`}>
-                              {user.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(user.created_at).toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button 
-                              onClick={() => handleEditUser(user)}
-                              className="text-indigo-600 hover:text-indigo-900 mr-4"
-                            >
-                              Edit
-                            </button>
-                            <button 
-                              onClick={() => handleDeleteUser(user.id)}
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell">
+                              <div className="text-sm text-gray-900">{user.department}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 
+                                  user.role === 'doctor' ? 'bg-blue-100 text-blue-800' : 
+                                  'bg-green-100 text-green-800'}`}>
+                                {user.role}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                ${user.status === 'active' ? 'bg-green-100 text-green-800' : 
+                                  user.status === 'inactive' ? 'bg-red-100 text-red-800' : 
+                                  'bg-yellow-100 text-yellow-800'}`}>
+                                {user.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">
+                              {new Date(user.created_at).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              <button 
+                                onClick={() => handleEditUser(user)}
+                                className="text-indigo-600 hover:text-indigo-900 mr-4"
+                              >
+                                Edit
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteUser(user.id)}
+                                className="text-red-600 hover:text-red-900"
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
@@ -349,7 +370,8 @@ function UserModal({ user, isNew = false, onClose, onSave }) {
           email: '', 
           password: '',
           first_name: '', 
-          last_name: '', 
+          last_name: '',
+          department: '',
           role: 'nurse' 
         }
       : { 
@@ -369,15 +391,15 @@ function UserModal({ user, isNew = false, onClose, onSave }) {
   };
   
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-10">
-      <div className="bg-white rounded-lg overflow-hidden shadow-xl transform transition-all max-w-lg w-full">
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-10 p-4">
+      <div className="bg-white rounded-lg overflow-hidden shadow-xl transform transition-all max-w-lg w-full max-h-[95vh]">
         <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 sm:px-6">
           <h3 className="text-lg leading-6 font-medium text-gray-900">
             {isNew ? 'Create New User' : 'Edit User'}
           </h3>
         </div>
         
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[80vh]">
           <div className="px-4 py-5 sm:p-6">
             <div className="grid grid-cols-6 gap-6">
               <div className="col-span-6 sm:col-span-3">
@@ -442,6 +464,22 @@ function UserModal({ user, isNew = false, onClose, onSave }) {
                   />
                 </div>
               )}
+
+              <div className="col-span-6">
+                <label htmlFor="department" className="block text-sm font-medium text-gray-700">
+                  Department
+                </label>
+                <input
+                  type="text"
+                  name="department"
+                  id="department"
+                  value={formData.department || ''}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                  placeholder="E.g., Cardiology, Pediatrics, IT Administration"
+                />
+              </div>
 
               <div className="col-span-6">
                 <label htmlFor="role" className="block text-sm font-medium text-gray-700">
