@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import PredictionGenerator from '../../components/admin/PredictionGenerator';
+import PropTypes from 'prop-types';
+import { Dialog } from '@headlessui/react';
 
 export default function Patients() {
   const { role } = useAuth();
@@ -10,9 +11,16 @@ export default function Patients() {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [riskFilter, setRiskFilter] = useState('all');
-  const [showPredictionGenerator, setShowPredictionGenerator] = useState(false);
-  const [selectedPatientIds, setSelectedPatientIds] = useState([]);
-  const [isPredicting, setIsPredicting] = useState(false);
+  const [isAddPatientModalOpen, setIsAddPatientModalOpen] = useState(false);
+  const [newPatient, setNewPatient] = useState({
+    first_name: '',
+    last_name: '',
+    gender: 'Male',
+    dob: '',
+    mrn: '',
+    department: 'Cardiology',
+    attending_doctor: ''
+  });
   
   useEffect(() => {
     fetchPatients();
@@ -23,12 +31,6 @@ export default function Patients() {
       setIsLoading(true);
       
       // In a real app, this would fetch from Supabase
-      // const { data, error } = await supabase
-      //   .from('patients')
-      //   .select('*')
-      //   .order('last_name', { ascending: true });
-      
-      // if (error) throw error;
       
       // Mock data
       const mockPatients = [
@@ -116,55 +118,55 @@ export default function Patients() {
     setRiskFilter(e.target.value);
   };
   
-  const togglePredictionGenerator = () => {
-    setShowPredictionGenerator(!showPredictionGenerator);
+  const handleAddPatientClick = () => {
+    setIsAddPatientModalOpen(true);
   };
   
-  // Handle patient selection for predictions
-  const togglePatientSelection = (patientId) => {
-    setSelectedPatientIds(prevSelected => {
-      if (prevSelected.includes(patientId)) {
-        return prevSelected.filter(id => id !== patientId);
-      } else {
-        return [...prevSelected, patientId];
-      }
+  const handleCloseModal = () => {
+    setIsAddPatientModalOpen(false);
+    // Reset form
+    setNewPatient({
+      first_name: '',
+      last_name: '',
+      gender: 'Male',
+      dob: '',
+      mrn: '',
+      department: 'Cardiology',
+      attending_doctor: ''
     });
   };
   
-  // Toggle all patients selection
-  const toggleAllPatients = () => {
-    if (selectedPatientIds.length === filteredPatients.length) {
-      setSelectedPatientIds([]);
-    } else {
-      setSelectedPatientIds(filteredPatients.map(patient => patient.id));
-    }
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewPatient(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
   
-  // Generate predictions for selected patients
-  const generatePredictions = async () => {
-    if (selectedPatientIds.length === 0) {
-      alert('Please select at least one patient');
-      return;
+  const handleAddPatient = (e) => {
+    e.preventDefault();
+    
+    // Determine risk level
+    let riskLevel = 'low';
+    const randomValue = Math.random();
+    if (randomValue > 0.66) {
+      riskLevel = 'high';
+    } else if (randomValue > 0.33) {
+      riskLevel = 'medium';
     }
     
-    setIsPredicting(true);
+    // In a real app, this would send data to the backend
+    const newPatientData = {
+      ...newPatient,
+      id: `${patients.length + 1}`,
+      risk_score: parseFloat(Math.random().toFixed(2)),
+      risk_level: riskLevel,
+      last_admission: new Date().toISOString().split('T')[0]
+    };
     
-    try {
-      // In a real application, this would make an API call to your ML service
-      // Simulating API call with timeout
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Show success message
-      alert(`Successfully generated readmission predictions for ${selectedPatientIds.length} patients.`);
-      
-      // Reset selected patients
-      setSelectedPatientIds([]);
-    } catch (error) {
-      console.error('Error generating predictions:', error);
-      alert('Failed to generate predictions. Please try again.');
-    } finally {
-      setIsPredicting(false);
-    }
+    setPatients([newPatientData, ...patients]);
+    handleCloseModal();
   };
   
   // Filter patients based on search term and risk filter
@@ -187,9 +189,6 @@ export default function Patients() {
         <div className="mt-6">
           <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 mb-4">
             <div className="flex-1">
-              <label htmlFor="search" className="sr-only">
-                Search patients
-              </label>
               <div className="relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <SearchIcon className="h-5 w-5 text-gray-400" />
@@ -200,22 +199,19 @@ export default function Patients() {
                   id="search"
                   value={searchTerm}
                   onChange={handleSearch}
-                  className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md"
+                  className="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 py-2 sm:text-sm border-gray-300 rounded-md text-gray-800"
                   placeholder="Search by name or MRN"
                 />
               </div>
             </div>
             
             <div className="flex flex-shrink-0">
-              <label htmlFor="risk-filter" className="sr-only">
-                Filter by risk level
-              </label>
               <select
                 id="risk-filter"
                 name="risk-filter"
                 value={riskFilter}
                 onChange={handleRiskFilterChange}
-                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md text-gray-800"
               >
                 <option value="all">All Risk Levels</option>
                 <option value="high">High Risk</option>
@@ -225,106 +221,20 @@ export default function Patients() {
             </div>
             
             <div className="flex space-x-2">
-              <button
-                type="button"
-                onClick={togglePredictionGenerator}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                <ChartIcon className="h-5 w-5 mr-2" />
-                {showPredictionGenerator ? 'Hide Prediction Tool' : 'Show Prediction Tool'}
-              </button>
-              
               {isAdmin && (
                 <button
                   type="button"
-                  onClick={() => console.log('Add new patient')}
+                  onClick={handleAddPatientClick}
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
-                  <PlusIcon className="h-5 w-5 mr-2" />
+                  <PlusIcon className="h-5 w-5 mr-1" />
                   Add Patient
                 </button>
               )}
             </div>
           </div>
           
-          {/* Readmission Prediction Generator */}
-          {showPredictionGenerator && (
-            <div className="mb-6 bg-white shadow rounded-lg p-6 border border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">Readmission Prediction Generator</h3>
-                <div className="flex items-center">
-                  <span className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800 mr-2">
-                    <span className="flex-shrink-0 mr-1">
-                      <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                      </svg>
-                    </span>
-                    Real-time prediction
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowPredictionGenerator(false)}
-                    className="inline-flex items-center p-1 border border-transparent rounded-full shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                  >
-                    <XIcon className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-              
-              <div className="mb-4 p-4 bg-blue-50 rounded-md border border-blue-100">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <InformationCircleIcon className="h-5 w-5 text-blue-400" />
-                  </div>
-                  <div className="ml-3 flex-1 md:flex md:justify-between">
-                    <p className="text-sm text-blue-700">
-                      Select patients from the table below and click "Generate Predictions" to calculate 30-day readmission risk.
-                    </p>
-                    <p className="mt-3 text-sm md:mt-0 md:ml-6">
-                      <button
-                        className="whitespace-nowrap font-medium text-blue-700 hover:text-blue-600"
-                        onClick={toggleAllPatients}
-                      >
-                        {selectedPatientIds.length === filteredPatients.length && filteredPatients.length > 0
-                          ? 'Deselect All'
-                          : 'Select All'}
-                      </button>
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <div className="text-sm text-gray-500">
-                  {selectedPatientIds.length} {selectedPatientIds.length === 1 ? 'patient' : 'patients'} selected for prediction
-                </div>
-                
-                <button
-                  type="button"
-                  onClick={generatePredictions}
-                  disabled={isPredicting || selectedPatientIds.length === 0}
-                  className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ${
-                    (isPredicting || selectedPatientIds.length === 0) ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                >
-                  {isPredicting ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <ChartBarIcon className="h-5 w-5 mr-2" />
-                      Generate Predictions
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          )}
+
           
           {error && (
             <div className="mb-4 p-4 bg-red-50 border border-red-300 rounded-md text-red-700">
@@ -342,16 +252,6 @@ export default function Patients() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  {showPredictionGenerator && (
-                    <th scope="col" className="relative px-6 py-3">
-                      <input
-                        type="checkbox"
-                        className="absolute h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                        checked={selectedPatientIds.length === filteredPatients.length && filteredPatients.length > 0}
-                        onChange={toggleAllPatients}
-                      />
-                    </th>
-                  )}
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Patient
                   </th>
@@ -376,10 +276,11 @@ export default function Patients() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {isLoading ? (
+                {/* Table content logic */}
+                {isLoading && (
                   // Loading skeletons
-                  [...Array(5)].map((_, index) => (
-                    <tr key={`loading-${index}`}>
+                  [...Array(5)].map(() => (
+                    <tr key={`skeleton-row-${Math.random().toString(36).substring(2, 11)}`}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="h-10 w-10 rounded-full bg-gray-200 animate-pulse"></div>
@@ -409,27 +310,19 @@ export default function Patients() {
                       </td>
                     </tr>
                   ))
-                ) : filteredPatients.length === 0 ? (
+                )}
+                
+                {!isLoading && filteredPatients.length === 0 && (
                   <tr>
                     <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
                       No patients found matching your search criteria.
                     </td>
                   </tr>
-                ) : (
+                )}
+                
+                {!isLoading && filteredPatients.length > 0 && 
                   filteredPatients.map((patient) => (
-                    <tr key={patient.id} className={`hover:bg-gray-50 ${selectedPatientIds.includes(patient.id) ? 'bg-blue-50' : ''}`}>
-                      {showPredictionGenerator && (
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center justify-center">
-                            <input
-                              type="checkbox"
-                              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                              checked={selectedPatientIds.includes(patient.id)}
-                              onChange={() => togglePatientSelection(patient.id)}
-                            />
-                          </div>
-                        </td>
-                      )}
+                    <tr key={patient.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700">
@@ -463,37 +356,177 @@ export default function Patients() {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button 
                           onClick={() => console.log(`View patient ${patient.id}`)}
-                          className="text-indigo-600 hover:text-indigo-900 mr-4"
+                          className="text-blue-600 hover:text-blue-800 mr-4 font-medium"
                         >
                           View
                         </button>
                         <button 
                           onClick={() => console.log(`Edit patient ${patient.id}`)}
-                          className="text-indigo-600 hover:text-indigo-900"
+                          className="text-indigo-600 hover:text-indigo-800 font-medium"
                         >
                           Edit
                         </button>
                       </td>
                     </tr>
                   ))
-                )}
+                }
               </tbody>
             </table>
           </div>
         </div>
       </div>
       
-      {/* Prediction Generator Modal */}
-      {showPredictionGenerator && (
-        <PredictionGenerator
-          isOpen={showPredictionGenerator}
-          onClose={togglePredictionGenerator}
-          selectedPatients={selectedPatientIds}
-          isPredicting={isPredicting}
-          setIsPredicting={setIsPredicting}
-          onPatientSelectionChange={setSelectedPatientIds}
-        />
-      )}
+      {/* Add Patient Modal */}
+      <Dialog
+        open={isAddPatientModalOpen}
+        onClose={handleCloseModal}
+        className="relative z-50"
+      >
+        {/* Backdrop */}
+        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+
+        {/* Full-screen container to center the panel */}
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
+              Add New Patient
+            </h3>
+                  
+                  <form onSubmit={handleAddPatient} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-x-4">
+                      <div>
+                        <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">
+                          First Name
+                        </label>
+                        <input
+                          type="text"
+                          name="first_name"
+                          id="first_name"
+                          value={newPatient.first_name}
+                          onChange={handleInputChange}
+                          required
+                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                          placeholder="First name"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">
+                          Last Name
+                        </label>
+                        <input
+                          type="text"
+                          name="last_name"
+                          id="last_name"
+                          value={newPatient.last_name}
+                          onChange={handleInputChange}
+                          required
+                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                          placeholder="Last name"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">
+                        Gender
+                      </label>
+                      <select
+                        id="gender"
+                        name="gender"
+                        value={newPatient.gender}
+                        onChange={handleInputChange}
+                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      >
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="dob" className="block text-sm font-medium text-gray-700 mb-1">
+                        Date of Birth
+                      </label>
+                      <input
+                        type="date"
+                        name="dob"
+                        id="dob"
+                        value={newPatient.dob}
+                        onChange={handleInputChange}
+                        required
+                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="mrn" className="block text-sm font-medium text-gray-700 mb-1">
+                        Medical Record Number (MRN)
+                      </label>
+                      <input
+                        type="text"
+                        name="mrn"
+                        id="mrn"
+                        value={newPatient.mrn}
+                        onChange={handleInputChange}
+                        required
+                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                        placeholder="MRN12350"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-1">
+                        Department
+                      </label>
+                      <select
+                        id="department"
+                        name="department"
+                        value={newPatient.department}
+                        onChange={handleInputChange}
+                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      >
+                        <option value="Cardiology">Cardiology</option>
+                        <option value="Neurology">Neurology</option>
+                        <option value="Oncology">Oncology</option>
+                        <option value="General">General</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="attending_doctor" className="block text-sm font-medium text-gray-700 mb-1">
+                        Attending Doctor
+                      </label>
+                      <input
+                        type="text"
+                        name="attending_doctor"
+                        id="attending_doctor"
+                        value={newPatient.attending_doctor}
+                        onChange={handleInputChange}
+                        required
+                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                        placeholder="Dr. Smith"
+                      />
+                    </div>
+                    
+                    <div className="mt-4 flex justify-end space-x-3">
+                      <button
+                        type="button"
+                        onClick={handleCloseModal}
+                        className="px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-indigo-600 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      >
+                        Add Patient
+                      </button>
+                    </div>
+                  </form>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 }
@@ -558,26 +591,22 @@ const PlusIcon = ({ className }) => (
   </svg>
 );
 
-const ChartIcon = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-  </svg>
-);
+// PropTypes
+RiskBadge.propTypes = {
+  riskLevel: PropTypes.string.isRequired,
+  riskScore: PropTypes.number.isRequired
+};
 
-const XIcon = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-  </svg>
-);
+SearchIcon.propTypes = {
+  className: PropTypes.string
+};
 
-const InformationCircleIcon = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-);
+PlusIcon.propTypes = {
+  className: PropTypes.string
+};
 
-const ChartBarIcon = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-  </svg>
-);
+
+
+
+
+
