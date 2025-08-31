@@ -1,15 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MagnifyingGlassIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import { Dialog, Transition } from '@headlessui/react';
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 
 export default function Predictions() {
   const [predictions, setPredictions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedPrediction, setSelectedPrediction] = useState(null);
-  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
 
   // Fetch predictions data
   useEffect(() => {
@@ -131,15 +128,21 @@ export default function Predictions() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h1 className="text-2xl font-semibold text-gray-900">Predictions</h1>
             
-            <div className="relative w-full sm:w-[280px]">
-              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search patients, MRN, or doctor..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="block w-full pl-10 pr-4 py-2.5 text-sm text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm"
-              />
+            <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+              <div className="relative w-full sm:w-[280px]">
+                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search patients, MRN, or doctor..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="block w-full pl-10 pr-4 py-2.5 text-sm text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm"
+                />
+              </div>
+              
+              <button className="inline-flex items-center justify-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 w-full sm:w-auto">
+                New Prediction
+              </button>
             </div>
           </div>
 
@@ -158,7 +161,9 @@ export default function Predictions() {
                     <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Outcome
                     </th>
-
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                      Model
+                    </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
                       Requested By
                     </th>
@@ -193,7 +198,9 @@ export default function Predictions() {
                           {prediction.predictedOutcome === 'readmit' ? 'Readmission' : 'No Readmission'}
                         </span>
                       </td>
-
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">
+                        {prediction.modelVersion}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden lg:table-cell">
                         {prediction.requestedBy}
                       </td>
@@ -201,16 +208,12 @@ export default function Predictions() {
                         {formatDate(prediction.date)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => {
-                            setSelectedPrediction(prediction);
-                            setShowDetailsDialog(true);
-                          }}
-                          className="text-indigo-600 hover:text-indigo-900 inline-flex items-center gap-1"
+                        <Link
+                          to={`/admin/predictions/${prediction.id}`}
+                          className="text-indigo-600 hover:text-indigo-900"
                         >
                           View Details
-                          <ChevronRightIcon className="h-4 w-4" />
-                        </button>
+                        </Link>
                       </td>
                     </tr>
                   ))}
@@ -281,168 +284,6 @@ export default function Predictions() {
           </div>
         </div>
       </div>
-
-      {/* Details Dialog */}
-      <Transition show={showDetailsDialog} as={React.Fragment}>
-        <Dialog as="div" className="relative z-10" onClose={() => setShowDetailsDialog(false)}>
-          <Transition.Child
-            as={React.Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 backdrop-blur-xs transition-opacity" />
-          </Transition.Child>
-
-          <div className="fixed inset-0 z-10 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4">
-              <Transition.Child
-                as={React.Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                enterTo="opacity-100 translate-y-0 sm:scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-                leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-              >
-                <Dialog.Panel className="relative transform overflow-hidden rounded-xl bg-white/80 backdrop-blur-md text-left shadow-xl transition-all w-full max-w-lg">
-                  {selectedPrediction && (
-                    <>
-                      <div className="px-6 py-6">
-                        <div className="flex items-center justify-between">
-                          <Dialog.Title as="h3" className="text-xl font-semibold text-gray-900">
-                            Prediction Details
-                          </Dialog.Title>
-                          <button
-                            onClick={() => setShowDetailsDialog(false)}
-                            className="rounded-full p-2 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                          >
-                            <span className="sr-only">Close</span>
-                            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                        
-                        <div className="mt-6">
-                          <div className="space-y-8">
-                            {/* Patient Info Card */}
-                            <div className="bg-white/50 backdrop-blur-xs rounded-lg p-4 shadow-sm ring-1 ring-gray-900/5">
-                              <h4 className="text-sm font-medium text-gray-500">Patient Information</h4>
-                              <p className="mt-2 text-lg font-medium text-gray-900">{selectedPrediction.patientName}</p>
-                              <p className="text-sm text-gray-500">{selectedPrediction.patientMrn}</p>
-                            </div>
-                            
-                            {/* Status Cards */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              {/* Risk Score Card */}
-                              <div className="bg-white/50 backdrop-blur-xs rounded-lg p-4 shadow-sm ring-1 ring-gray-900/5">
-                                <h4 className="text-sm font-medium text-gray-500">Risk Score</h4>
-                                <div className="mt-2">
-                                  <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${getRiskLevelClass(selectedPrediction.riskScore)}`}>
-                                    {Math.round(selectedPrediction.riskScore * 100)}%
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              {/* Outcome Card */}
-                              <div className="bg-white/50 backdrop-blur-xs rounded-lg p-4 shadow-sm ring-1 ring-gray-900/5">
-                                <h4 className="text-sm font-medium text-gray-500">Predicted Outcome</h4>
-                                <div className="mt-2">
-                                  <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${
-                                    selectedPrediction.predictedOutcome === 'readmit' 
-                                      ? 'bg-red-100 text-red-800' 
-                                      : 'bg-green-100 text-green-800'
-                                  }`}>
-                                    {selectedPrediction.predictedOutcome === 'readmit' ? 'Readmission' : 'No Readmission'}
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              {/* Requested By Card */}
-                              <div className="bg-white/50 backdrop-blur-xs rounded-lg p-4 shadow-sm ring-1 ring-gray-900/5">
-                                <h4 className="text-sm font-medium text-gray-500">Requested By</h4>
-                                <p className="mt-2 text-base text-gray-900">{selectedPrediction.requestedBy}</p>
-                              </div>
-                              
-                              {/* Date Card */}
-                              <div className="bg-white/50 backdrop-blur-xs rounded-lg p-4 shadow-sm ring-1 ring-gray-900/5">
-                                <h4 className="text-sm font-medium text-gray-500">Date</h4>
-                                <p className="mt-2 text-base text-gray-900">{formatDate(selectedPrediction.date)}</p>
-                              </div>
-                            </div>
-
-                            {/* Risk Factors Card */}
-                            <div className="bg-white/50 backdrop-blur-xs rounded-lg p-4 shadow-sm ring-1 ring-gray-900/5">
-                              <h4 className="text-sm font-medium text-gray-500">Risk Factors</h4>
-                              <ul className="mt-3 space-y-2.5">
-                                <li className="flex items-start">
-                                  <span className="flex-shrink-0 h-1.5 w-1.5 mt-1.5 rounded-full bg-gray-500"></span>
-                                  <span className="ml-2.5 text-sm text-gray-700">Previous admissions in the last 30 days</span>
-                                </li>
-                                <li className="flex items-start">
-                                  <span className="flex-shrink-0 h-1.5 w-1.5 mt-1.5 rounded-full bg-gray-500"></span>
-                                  <span className="ml-2.5 text-sm text-gray-700">Multiple chronic conditions</span>
-                                </li>
-                                <li className="flex items-start">
-                                  <span className="flex-shrink-0 h-1.5 w-1.5 mt-1.5 rounded-full bg-gray-500"></span>
-                                  <span className="ml-2.5 text-sm text-gray-700">Complex medication regimen</span>
-                                </li>
-                                <li className="flex items-start">
-                                  <span className="flex-shrink-0 h-1.5 w-1.5 mt-1.5 rounded-full bg-gray-500"></span>
-                                  <span className="ml-2.5 text-sm text-gray-700">Limited social support</span>
-                                </li>
-                              </ul>
-                            </div>
-
-                            {/* Recommended Actions Card */}
-                            <div className="bg-white/50 backdrop-blur-xs rounded-lg p-4 shadow-sm ring-1 ring-gray-900/5">
-                              <h4 className="text-sm font-medium text-gray-500">Recommended Actions</h4>
-                              <ul className="mt-3 space-y-2.5">
-                                <li className="flex items-start">
-                                  <span className="flex-shrink-0 h-1.5 w-1.5 mt-1.5 rounded-full bg-gray-500"></span>
-                                  <span className="ml-2.5 text-sm text-gray-700">Schedule follow-up appointment within 7 days</span>
-                                </li>
-                                <li className="flex items-start">
-                                  <span className="flex-shrink-0 h-1.5 w-1.5 mt-1.5 rounded-full bg-gray-500"></span>
-                                  <span className="ml-2.5 text-sm text-gray-700">Review and adjust medication plan</span>
-                                </li>
-                                <li className="flex items-start">
-                                  <span className="flex-shrink-0 h-1.5 w-1.5 mt-1.5 rounded-full bg-gray-500"></span>
-                                  <span className="ml-2.5 text-sm text-gray-700">Coordinate with social services</span>
-                                </li>
-                                <li className="flex items-start">
-                                  <span className="flex-shrink-0 h-1.5 w-1.5 mt-1.5 rounded-full bg-gray-500"></span>
-                                  <span className="ml-2.5 text-sm text-gray-700">Implement remote monitoring program</span>
-                                </li>
-                              </ul>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="border-t border-gray-200 bg-gray-50/80 backdrop-blur-xs px-6 py-4">
-                        <div className="flex justify-end">
-                          <button
-                            type="button"
-                            className="inline-flex justify-center rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:hidden"
-                            onClick={() => setShowDetailsDialog(false)}
-                          >
-                            Close
-                          </button>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </Dialog.Panel>
-              </Transition.Child>
-            </div>
-          </div>
-        </Dialog>
-      </Transition>
     </div>
   );
 }

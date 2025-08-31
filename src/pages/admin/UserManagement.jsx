@@ -391,19 +391,28 @@ function UserModal({ user, isNew = false, onClose, onSave }) {
   };
   
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center z-10 p-4">
-      <div className="bg-white rounded-lg overflow-hidden shadow-xl transform transition-all max-w-lg w-full max-h-[95vh]">
-        <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 sm:px-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">
+    <div className="fixed inset-0 flex items-center justify-center z-50 p-4 pointer-events-none backdrop-blur-xs">
+      <div className="bg-white rounded-xl overflow-hidden shadow-2xl transform transition-all max-w-lg w-full max-h-[95vh] pointer-events-auto">
+        <div className="bg-gray-50 px-6 py-5 border-b border-gray-200 flex justify-between items-center">
+          <h3 className="text-xl leading-6 font-semibold text-gray-900">
             {isNew ? 'Create New User' : 'Edit User'}
           </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md p-1 hover:bg-gray-200 transition-colors duration-200 focus:outline-none"
+          >
+            <svg className="h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
         
         <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[80vh]">
-          <div className="px-4 py-5 sm:p-6">
-            <div className="grid grid-cols-6 gap-6">
+          <div className="px-6 py-6 bg-white">
+            <div className="grid grid-cols-6 gap-x-4 gap-y-5">
               <div className="col-span-6 sm:col-span-3">
-                <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1.5">
                   First name
                 </label>
                 <input
@@ -413,12 +422,13 @@ function UserModal({ user, isNew = false, onClose, onSave }) {
                   value={formData.first_name}
                   onChange={handleChange}
                   required
-                  className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                  className="block w-full h-10 px-3 py-2 text-gray-900 bg-white bg-opacity-95 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  placeholder="Enter first name"
                 />
               </div>
 
               <div className="col-span-6 sm:col-span-3">
-                <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1.5">
                   Last name
                 </label>
                 <input
@@ -428,12 +438,13 @@ function UserModal({ user, isNew = false, onClose, onSave }) {
                   value={formData.last_name}
                   onChange={handleChange}
                   required
-                  className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                  className="block w-full h-10 px-3 py-2 text-gray-900 bg-white bg-opacity-95 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  placeholder="Enter last name"
                 />
               </div>
 
               <div className="col-span-6">
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
                   Email address
                 </label>
                 <input
@@ -444,13 +455,14 @@ function UserModal({ user, isNew = false, onClose, onSave }) {
                   onChange={handleChange}
                   disabled={!isNew}
                   required
-                  className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md disabled:bg-gray-100"
+                  className="block w-full h-10 px-3 py-2 text-gray-900 bg-white bg-opacity-95 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm disabled:bg-gray-100 disabled:text-gray-600"
+                  placeholder="user@example.com"
                 />
               </div>
               
               {isNew && (
                 <div className="col-span-6">
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">
                     Password
                   </label>
                   <input
@@ -460,13 +472,14 @@ function UserModal({ user, isNew = false, onClose, onSave }) {
                     value={formData.password}
                     onChange={handleChange}
                     required={isNew}
-                    className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                    className="block w-full h-10 px-3 py-2 text-gray-900 bg-white bg-opacity-95 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    placeholder="Enter Password"
                   />
                 </div>
               )}
 
               <div className="col-span-6">
-                <label htmlFor="department" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-1.5">
                   Department
                 </label>
                 <input
@@ -476,13 +489,13 @@ function UserModal({ user, isNew = false, onClose, onSave }) {
                   value={formData.department || ''}
                   onChange={handleChange}
                   required
-                  className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                  className="block w-full h-10 px-3 py-2 text-gray-900 bg-white bg-opacity-95 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                   placeholder="E.g., Cardiology, Pediatrics, IT Administration"
                 />
               </div>
 
               <div className="col-span-6">
-                <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1.5">
                   Role
                 </label>
                 <select
@@ -490,7 +503,7 @@ function UserModal({ user, isNew = false, onClose, onSave }) {
                   name="role"
                   value={formData.role}
                   onChange={handleChange}
-                  className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="block w-full h-10 px-3 py-2 text-gray-900 bg-white bg-opacity-95 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 >
                   <option value="admin">Admin</option>
                   <option value="doctor">Doctor</option>
@@ -500,7 +513,7 @@ function UserModal({ user, isNew = false, onClose, onSave }) {
               
               {!isNew && (
                 <div className="col-span-6">
-                  <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1.5">
                     Status
                   </label>
                   <select
@@ -508,7 +521,7 @@ function UserModal({ user, isNew = false, onClose, onSave }) {
                     name="status"
                     value={formData.status}
                     onChange={handleChange}
-                    className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    className="block w-full h-10 px-3 py-2 text-gray-900 bg-white bg-opacity-95 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                   >
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
@@ -519,17 +532,17 @@ function UserModal({ user, isNew = false, onClose, onSave }) {
             </div>
           </div>
           
-          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+          <div className="bg-gray-50 px-6 py-4 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-200">
             <button
               type="submit"
-              className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm"
+              className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-6 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-4 sm:w-auto sm:text-sm transition-colors duration-200"
             >
               {isNew ? 'Create' : 'Save'}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-6 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-all duration-200"
             >
               Cancel
             </button>

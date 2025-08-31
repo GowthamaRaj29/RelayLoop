@@ -5,7 +5,6 @@ import {
   DepartmentPerformanceChart,
   PredictionAccuracyChart
 } from '../../components/charts/DashboardCharts';
-import PredictionGenerator from '../../components/admin/PredictionGenerator';
 
 // Main dashboard component - Using React.memo to prevent unnecessary rerenders
 const AdminDashboard = memo(function AdminDashboard() {

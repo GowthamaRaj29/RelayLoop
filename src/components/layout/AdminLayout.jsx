@@ -139,12 +139,12 @@ const AdminLayout = memo(function AdminLayout() {
       icon: DashboardIcon,
       current: location.pathname === '/admin/dashboard'
     },
-    { 
-      name: 'Profile', 
-      path: '/admin/profile', 
-      icon: UsersIcon,
-      current: location.pathname === '/admin/profile'
-    },
+    // { 
+    //   name: 'Profile', 
+    //   path: '/admin/profile', 
+    //   icon: UsersIcon,
+    //   current: location.pathname === '/admin/profile'
+    // },
     { 
       name: 'Users Management', 
       path: '/admin/users', 
@@ -170,40 +170,40 @@ const AdminLayout = memo(function AdminLayout() {
       icon: LightningBoltIcon,
       current: location.pathname === '/admin/predictions' || location.pathname.startsWith('/admin/predictions/')
     },
-    { 
-      name: 'Models', 
-      path: '/admin/models', 
-      icon: CubeIcon,
-      current: location.pathname === '/admin/models',
-      adminOnly: true
-    },
-    { 
-      name: 'Batch Jobs', 
-      path: '/admin/batch-jobs', 
-      icon: ServerIcon,
-      current: location.pathname === '/admin/batch-jobs',
-      adminOnly: true
-    },
-    { 
-      name: 'Audit Logs', 
-      path: '/admin/audit-logs', 
-      icon: DocumentTextIcon,
-      current: location.pathname === '/admin/audit-logs',
-      adminOnly: true
-    },
+    // { 
+    //   name: 'Models', 
+    //   path: '/admin/models', 
+    //   icon: CubeIcon,
+    //   current: location.pathname === '/admin/models',
+    //   adminOnly: true
+    // },
+    // { 
+    //   name: 'Batch Jobs', 
+    //   path: '/admin/batch-jobs', 
+    //   icon: ServerIcon,
+    //   current: location.pathname === '/admin/batch-jobs',
+    //   adminOnly: true
+    // },
+    // { 
+    //   name: 'Audit Logs', 
+    //   path: '/admin/audit-logs', 
+    //   icon: DocumentTextIcon,
+    //   current: location.pathname === '/admin/audit-logs',
+    //   adminOnly: true
+    // },
     { 
       name: 'Reports & Analytics', 
       path: '/admin/analytics', 
       icon: ChartBarIcon,
       current: location.pathname === '/admin/analytics'
     },
-    { 
-      name: 'Settings', 
-      path: '/admin/settings', 
-      icon: CogIcon,
-      current: location.pathname === '/admin/settings',
-      adminOnly: true
-    }
+    // { 
+    //   name: 'Settings', 
+    //   path: '/admin/settings', 
+    //   icon: CogIcon,
+    //   current: location.pathname === '/admin/settings',
+    //   adminOnly: true
+    // }
   ], [location.pathname]);
 
   // Show loading overlay during authentication check - this needs to be fast!
@@ -326,28 +326,17 @@ const AdminLayout = memo(function AdminLayout() {
                 )}
               </nav>
 
-              {/* Mobile sidebar footer */}
-              <div className="px-3 py-4 mt-auto border-t border-gray-200 bg-gray-50">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-800 font-medium">
-                      {user?.email?.charAt(0).toUpperCase() || 'U'}
-                    </div>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-700 truncate">{user?.email || 'User'}</p>
-                    <p className="text-xs text-gray-500 truncate">{role || 'User'} role</p>
-                  </div>
-                  <button
-                    onClick={handleSignOut}
-                    className="ml-auto inline-flex items-center p-1.5 border border-gray-300 rounded-md text-xs text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    <svg className="h-3.5 w-3.5 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    Sign Out
-                  </button>
-                </div>
+              {/* Mobile sidebar logout button */}
+              <div className="px-3 pt-4 pb-6 mt-auto border-t border-gray-200 bg-gray-50">
+                <button
+                  onClick={handleSignOut}
+                  className="w-full flex items-center justify-center px-4 py-3 text-sm font-medium text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
+                >
+                  <svg className="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Sign Out
+                </button>
               </div>
             </div>
           </div>
@@ -392,6 +381,25 @@ const AdminLayout = memo(function AdminLayout() {
                       {item.name}
                     </Link>
                   ))}
+
+                {/* Desktop sidebar logout button */}
+                <div className="mt-auto pt-4 border-t border-gray-200 mb-4">
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full flex items-center px-3 py-3 text-sm font-medium text-red-600 hover:text-white hover:bg-gradient-to-r hover:from-red-600 hover:to-red-700 rounded-lg transition-all duration-200 group"
+                  >
+                    <svg 
+                      className="h-5 w-5 mr-3 text-red-500 group-hover:text-white" 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Sign Out
+                  </button>
+                </div>
               </nav>
             </div>
           </div>
