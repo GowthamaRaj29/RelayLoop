@@ -174,98 +174,7 @@ export default function AdminProfile() {
     }
   };
   
-  const updateNotificationPreference = async (key, value) => {
-    try {
-      // In a real app, we would update the preference in Supabase
-      // const { error } = await supabase
-      //   .from('profiles')
-      //   .update({
-      //     preferences: {
-      //       ...profile.preferences,
-      //       notifications: {
-      //         ...profile.preferences.notifications,
-      //         [key]: value
-      //       }
-      //     }
-      //   })
-      //   .eq('id', user.id);
-      
-      // if (error) throw error;
-      
-      // Update local state
-      setProfile({
-        ...profile,
-        preferences: {
-          ...profile.preferences,
-          notifications: {
-            ...profile.preferences.notifications,
-            [key]: value
-          }
-        }
-      });
-    } catch (err) {
-      console.error('Error updating notification preference:', err);
-      alert('Failed to update notification preference. Please try again.');
-    }
-  };
-  
-  const updateThemePreference = async (theme) => {
-    try {
-      // In a real app, we would update the preference in Supabase
-      // const { error } = await supabase
-      //   .from('profiles')
-      //   .update({
-      //     preferences: {
-      //       ...profile.preferences,
-      //       theme: theme
-      //     }
-      //   })
-      //   .eq('id', user.id);
-      
-      // if (error) throw error;
-      
-      // Update local state
-      setProfile({
-        ...profile,
-        preferences: {
-          ...profile.preferences,
-          theme
-        }
-      });
-    } catch (err) {
-      console.error('Error updating theme preference:', err);
-      alert('Failed to update theme preference. Please try again.');
-    }
-  };
-  
-  const updateLanguagePreference = async (language) => {
-    try {
-      // In a real app, we would update the preference in Supabase
-      // const { error } = await supabase
-      //   .from('profiles')
-      //   .update({
-      //     preferences: {
-      //       ...profile.preferences,
-      //       language
-      //     }
-      //   })
-      //   .eq('id', user.id);
-      
-      // if (error) throw error;
-      
-      // Update local state
-      setProfile({
-        ...profile,
-        preferences: {
-          ...profile.preferences,
-          language
-        }
-      });
-    } catch (err) {
-      console.error('Error updating language preference:', err);
-      alert('Failed to update language preference. Please try again.');
-    }
-  };
+  // Preferences feature removed: notification/theme/language update handlers deleted
   
   // Show loading state
   if (isLoading) {
@@ -318,16 +227,6 @@ export default function AdminProfile() {
               } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
             >
               Security
-            </button>
-            <button
-              onClick={() => setActiveTab('preferences')}
-              className={`${
-                activeTab === 'preferences'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-            >
-              Preferences
             </button>
           </nav>
         </div>
@@ -613,20 +512,7 @@ export default function AdminProfile() {
                   </div>
                 </div>
                 
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
-                  <div>
-                    <h3 className="text-md font-medium text-gray-900">Two-Factor Authentication</h3>
-                    <p className="mt-1 text-sm text-gray-500">Add an extra layer of security to your account.</p>
-                  </div>
-                  <div className="mt-3 sm:mt-0">
-                    <button
-                      type="button"
-                      className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    >
-                      Enable 2FA
-                    </button>
-                  </div>
-                </div>
+                {/* Two-Factor Authentication section removed as requested */}
                 
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
                   <div>
@@ -700,134 +586,7 @@ export default function AdminProfile() {
           </div>
         )}
         
-        {/* Preferences Tab */}
-        {activeTab === 'preferences' && (
-          <div className="mt-6 bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 sm:px-6">
-              <h2 className="text-lg leading-6 font-medium text-gray-900">Preferences</h2>
-              <p className="mt-1 max-w-2xl text-sm text-gray-500">Customize your experience.</p>
-            </div>
-            <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
-              <div className="space-y-8">
-                <div>
-                  <h3 className="text-md font-medium text-gray-900 mb-4">Notification Preferences</h3>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Email Notifications</p>
-                        <p className="text-xs text-gray-500">Receive system notifications via email</p>
-                      </div>
-                      <div>
-                        <label className="switch">
-                          <input 
-                            type="checkbox" 
-                            checked={profile?.preferences?.notifications?.email} 
-                            onChange={(e) => updateNotificationPreference('email', e.target.checked)}
-                            className="sr-only"
-                          />
-                          <div className={`w-11 h-6 bg-${profile?.preferences?.notifications?.email ? 'blue-600' : 'gray-200'} rounded-full transition-colors duration-200 flex items-center ${profile?.preferences?.notifications?.email ? 'justify-end' : 'justify-start'}`}>
-                            <div className="w-5 h-5 rounded-full bg-white shadow-md transform duration-200 mx-0.5"></div>
-                          </div>
-                        </label>
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Push Notifications</p>
-                        <p className="text-xs text-gray-500">Receive alerts in the browser</p>
-                      </div>
-                      <div>
-                        <label className="switch">
-                          <input 
-                            type="checkbox" 
-                            checked={profile?.preferences?.notifications?.push} 
-                            onChange={(e) => updateNotificationPreference('push', e.target.checked)}
-                            className="sr-only"
-                          />
-                          <div className={`w-11 h-6 bg-${profile?.preferences?.notifications?.push ? 'blue-600' : 'gray-200'} rounded-full transition-colors duration-200 flex items-center ${profile?.preferences?.notifications?.push ? 'justify-end' : 'justify-start'}`}>
-                            <div className="w-5 h-5 rounded-full bg-white shadow-md transform duration-200 mx-0.5"></div>
-                          </div>
-                        </label>
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">SMS Notifications</p>
-                        <p className="text-xs text-gray-500">Receive urgent alerts via text message</p>
-                      </div>
-                      <div>
-                        <label className="switch">
-                          <input 
-                            type="checkbox" 
-                            checked={profile?.preferences?.notifications?.sms} 
-                            onChange={(e) => updateNotificationPreference('sms', e.target.checked)}
-                            className="sr-only"
-                          />
-                          <div className={`w-11 h-6 bg-${profile?.preferences?.notifications?.sms ? 'blue-600' : 'gray-200'} rounded-full transition-colors duration-200 flex items-center ${profile?.preferences?.notifications?.sms ? 'justify-end' : 'justify-start'}`}>
-                            <div className="w-5 h-5 rounded-full bg-white shadow-md transform duration-200 mx-0.5"></div>
-                          </div>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-md font-medium text-gray-900 mb-4">Theme</h3>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                    <button
-                      type="button"
-                      onClick={() => updateThemePreference('light')}
-                      className={`p-4 border ${profile?.preferences?.theme === 'light' ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'} rounded-lg flex items-center justify-center flex-col`}
-                    >
-                      <div className="w-full h-24 bg-white border border-gray-200 rounded-md mb-2"></div>
-                      <span className="text-sm font-medium">Light</span>
-                    </button>
-                    
-                    <button
-                      type="button"
-                      onClick={() => updateThemePreference('dark')}
-                      className={`p-4 border ${profile?.preferences?.theme === 'dark' ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'} rounded-lg flex items-center justify-center flex-col`}
-                    >
-                      <div className="w-full h-24 bg-gray-900 border border-gray-700 rounded-md mb-2"></div>
-                      <span className="text-sm font-medium">Dark</span>
-                    </button>
-                    
-                    <button
-                      type="button"
-                      onClick={() => updateThemePreference('system')}
-                      className={`p-4 border ${profile?.preferences?.theme === 'system' ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'} rounded-lg flex items-center justify-center flex-col`}
-                    >
-                      <div className="w-full h-24 bg-gradient-to-r from-white to-gray-900 border border-gray-200 rounded-md mb-2"></div>
-                      <span className="text-sm font-medium">System</span>
-                    </button>
-                  </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-md font-medium text-gray-900 mb-4">Language</h3>
-                  <div className="max-w-xs">
-                    <select
-                      value={profile?.preferences?.language}
-                      onChange={(e) => updateLanguagePreference(e.target.value)}
-                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                    >
-                      <option value="en-US">English (US)</option>
-                      <option value="en-GB">English (UK)</option>
-                      <option value="es-ES">Spanish</option>
-                      <option value="fr-FR">French</option>
-                      <option value="de-DE">German</option>
-                      <option value="ja-JP">Japanese</option>
-                      <option value="zh-CN">Chinese (Simplified)</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+  {/* Preferences tab removed as requested */}
         
         {/* Password Change Modal */}
         {isPasswordModalOpen && (
