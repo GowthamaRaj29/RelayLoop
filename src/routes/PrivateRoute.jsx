@@ -5,13 +5,32 @@ import RoleVerificationOverlay from '../components/ui/RoleVerificationOverlay';
 
 export default function PrivateRoute({ allowedRoles = [] }) {
   const { user, role, isLoading } = useAuth();
+  const cachedRole = typeof window !== 'undefined' ? localStorage.getItem('user_role') : null;
   
   // If still checking auth status, show enhanced loading UI
   if (isLoading) {
     // Determine the role to display in the loading overlay
-    // If we have a cached role, use that, otherwise use a generic verification
-    const cachedRole = localStorage.getItem('user_role') || 'user';
-    return <RoleVerificationOverlay role={cachedRole} isRecovering={false} />;
+    // First check the current URL for hints about expected role
+    const path = window.location.pathname;
+    let expectedRole = 'user';
+    
+    if (path.startsWith('/admin')) {
+      expectedRole = 'admin';
+    } else if (path.startsWith('/doctor')) {
+      expectedRole = 'doctor';
+    } else if (path.startsWith('/nurse')) {
+      expectedRole = 'nurse';
+    }
+    
+    // Now check cached role and see if it matches path expectation
+    const cachedRole = localStorage.getItem('user_role');
+    const isRoleMismatch = cachedRole && cachedRole !== expectedRole && expectedRole !== 'user';
+    
+    // Use cached role if available and consistent with path, otherwise use path expectation
+    const displayRole = cachedRole || expectedRole;
+    
+    // If there's a mismatch, we're recovering from an incorrect role state
+    return <RoleVerificationOverlay role={displayRole} isRecovering={isRoleMismatch} />;
   }
   
   // If not logged in, redirect to login but save current location
@@ -30,7 +49,6 @@ export default function PrivateRoute({ allowedRoles = [] }) {
     
     // Special handling for admin paths to ensure role persistence
     const isAdminPath = window.location.pathname.startsWith('/admin');
-    const cachedRole = localStorage.getItem('user_role');
     
     if (isAdminPath && cachedRole === 'admin' && role !== 'admin') {
       console.warn('Route is admin path but current role is not admin. Cached role is admin. Attempting role recovery...');
@@ -43,6 +61,11 @@ export default function PrivateRoute({ allowedRoles = [] }) {
     // Normal role checking
     if (!role || !allowedRoles.includes(role)) {
       console.warn(`User role (${role || 'none'}) not authorized for this route. Redirecting to login.`);
+      
+      // If we have a cached role that matches, show recovery overlay instead of redirecting immediately
+      if (cachedRole && allowedRoles.includes(cachedRole)) {
+        return <RoleVerificationOverlay role={cachedRole} isRecovering={true} />;
+      }
       
       // Only clear role if there's a definite mismatch, not during loading
       if (!isLoading) {

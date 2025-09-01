@@ -2,6 +2,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import PrivateRoute from './PrivateRoute';
 import Login from '../pages/Login';
 import AdminLayout from '../components/layout/AdminLayout';
+import NurseLayout from '../components/layout/NurseLayout';
+import DoctorLayout from '../components/layout/DoctorLayout';
 import AdminDashboard from '../pages/admin/Dashboard';
 import UserManagement from '../pages/admin/UserManagement';
 import SystemSettings from '../pages/admin/Settings';
@@ -16,7 +18,17 @@ import ModelDetails from '../pages/admin/ModelDetails';
 import BatchJobs from '../pages/admin/BatchJobs';
 import AuditLogs from '../pages/admin/AuditLogs';
 import Analytics from '../pages/admin/Analytics';
+import NursePatients from '../pages/nurse/NursePatients';
+import NursePatientNew from '../pages/nurse/NursePatientNew';
+import NursePatientDetails from '../pages/nurse/NursePatientDetails';
+import NursePatientEdit from '../pages/nurse/NursePatientEdit';
+import NurseVitals from '../pages/nurse/NurseVitals';
 import NotFound from '../pages/common/NotFound';
+import DoctorPatientNew from '../pages/doctor/DoctorPatientNew';
+import DoctorPatientEdit from '../pages/doctor/DoctorPatientEdit';
+import DoctorDashboard from '../pages/doctor/DoctorDashboard';
+import DoctorPatients from '../pages/doctor/DoctorPatients';
+import DoctorPatientDetails from '../pages/doctor/DoctorPatientDetails';
 
 export default function AppRoutes() {
   return (
@@ -49,15 +61,28 @@ export default function AppRoutes() {
       
       {/* Protected doctor routes */}
       <Route element={<PrivateRoute allowedRoles={['doctor']} />}>
-        <Route path="/doctor/patients" element={<div>Doctor Patients</div>} />
-        <Route path="/doctor/predictions" element={<div>Run Predictions</div>} />
-        <Route path="/doctor/analytics" element={<div>Department Analytics</div>} />
+        <Route path="/doctor" element={<DoctorLayout />}>
+          <Route path="dashboard" element={<DoctorDashboard />} />
+          <Route path="patients" element={<DoctorPatients />} />
+          <Route path="patients/:patientId" element={<DoctorPatientDetails />} />
+          <Route path="patients/:patientId/edit" element={<DoctorPatientEdit />} />
+          <Route path="patients/new" element={<DoctorPatientNew />} />
+          <Route path="predictions" element={<DoctorDashboard />} />
+          <Route path="analytics" element={<DoctorDashboard />} />
+          <Route path="" element={<Navigate to="/doctor/patients" replace />} />
+        </Route>
       </Route>
       
       {/* Protected nurse routes */}
       <Route element={<PrivateRoute allowedRoles={['nurse']} />}>
-        <Route path="/nurse/patients" element={<div>Nurse Patients</div>} />
-        <Route path="/nurse/observations" element={<div>Patient Observations</div>} />
+        <Route path="/nurse" element={<NurseLayout />}>
+          <Route path="patients" element={<NursePatients />} />
+          <Route path="patients/new" element={<NursePatientNew />} />
+          <Route path="patients/:patientId" element={<NursePatientDetails />} />
+          <Route path="patients/:patientId/edit" element={<NursePatientEdit />} />
+          <Route path="vitals" element={<NurseVitals />} />
+          <Route path="" element={<Navigate to="/nurse/patients" replace />} />
+        </Route>
       </Route>
       {/* Fallback routes */}
       {/* Root redirect based on role */}

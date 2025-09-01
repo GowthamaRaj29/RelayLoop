@@ -25,3 +25,10 @@
 .animate-progress-indeterminate {
   animation: progress-indeterminate 1.5s infinite linear;
 }
+
+/* Nurse-side: force input text to black for readability */
+.nurse-ui input,
+.nurse-ui select,
+.nurse-ui textarea {
+  color: #000 !important;
+}

@@ -5,7 +5,7 @@ import LoginForm from '../components/forms/LoginForm';
 import { RouteDebugger } from '../components/debug/RouteDebugger';
 
 export default function Login() {
-  const { user, role, isLoading, error, signOut } = useAuth();
+  const { user, role, department, isLoading, error, signOut } = useAuth();
   const navigate = useNavigate();
   const [renderError, setRenderError] = useState(null);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
@@ -61,12 +61,32 @@ export default function Login() {
         
         // Try to get a cached role first if current role is null
         let effectiveRole = role;
+        
         if (!effectiveRole) {
           const cachedRole = localStorage.getItem('user_role');
           console.log("Login: No current role, checking cached role:", cachedRole);
           if (cachedRole) {
             effectiveRole = cachedRole;
             console.log("Login: Using cached role:", effectiveRole);
+          }
+        } else {
+          // We have a role, make sure it's cached
+          localStorage.setItem('user_role', role);
+        }
+        
+        // For department handling, we need to use what's already in the hook scope
+        if ((role === 'nurse' || role === 'doctor' || 
+            effectiveRole === 'nurse' || effectiveRole === 'doctor')) {
+          // Cache department if available
+          if (department) {
+            localStorage.setItem('user_department', department);
+            console.log("Login: Caching department:", department);
+          } else {
+            // Try to get department from cache
+            const cachedDepartment = localStorage.getItem('user_department');
+            if (cachedDepartment) {
+              console.log("Login: Using cached department:", cachedDepartment);
+            }
           }
         }
         
@@ -105,6 +125,25 @@ export default function Login() {
         } else {
           // User has authenticated but no specific role was determined
           console.warn('No role determined for authenticated user');
+          // Try cached role one more time before giving up
+          const cachedRole = localStorage.getItem('user_role');
+          if (cachedRole) {
+            console.log('Using cached role as fallback:', cachedRole);
+            switch(cachedRole) {
+              case 'admin':
+                navigate('/admin/dashboard');
+                break;
+              case 'doctor':
+                navigate('/doctor/patients');
+                break;
+              case 'nurse':
+                navigate('/nurse/patients');
+                break;
+              default:
+                break;
+            }
+            return;
+          }
           
           // Show error for users without roles
           setRenderError("Your account doesn't have a role assigned. Please contact an administrator.");
@@ -117,7 +156,7 @@ export default function Login() {
       console.error('Error in navigation effect:', err);
       setRenderError(err.message);
     }
-  }, [user, role, isLoading, navigate, signOut]);
+  }, [user, role, department, isLoading, navigate, signOut]);
   
   // Display render errors if any
   if (renderError) {
