@@ -69,7 +69,10 @@ export default function DoctorPatientDetails() {
     }
     if (patient.medical_conditions?.length > 1) riskScore += 0.1;
     riskScore = Math.min(0.99, Math.max(0, riskScore));
-    setPrediction({ riskScore, outcome: riskScore >= 0.7 ? 'readmit' : (riskScore >= 0.3 ? 'monitor' : 'low') });
+  let outcome = 'low';
+  if (riskScore >= 0.7) outcome = 'readmit';
+  else if (riskScore >= 0.3) outcome = 'monitor';
+  setPrediction({ riskScore, outcome });
     setPredicting(false);
   };
 
@@ -144,7 +147,14 @@ export default function DoctorPatientDetails() {
               {prediction && (
                 <div className="mt-4">
                   <p className="text-sm text-gray-700">Risk Score: <span className="font-semibold">{Math.round(prediction.riskScore * 100)}%</span></p>
-                  <p className="text-sm text-gray-700">Outcome: <span className="font-semibold">{prediction.outcome === 'readmit' ? 'Readmission' : prediction.outcome === 'monitor' ? 'Monitor' : 'Low Risk'}</span></p>
+                  {(() => {
+                    let outText = 'Low Risk';
+                    if (prediction.outcome === 'readmit') outText = 'Readmission';
+                    else if (prediction.outcome === 'monitor') outText = 'Monitor';
+                    return (
+                      <p className="text-sm text-gray-700">Outcome: <span className="font-semibold">{outText}</span></p>
+                    );
+                  })()}
                 </div>
               )}
             </div>
@@ -262,7 +272,12 @@ export default function DoctorPatientDetails() {
                       <p className="text-sm font-medium text-gray-900">{n.author || 'Unknown'}</p>
                       <p className="text-xs text-gray-500">{formatDateTime(n.date)}</p>
                     </div>
-                    <span className={`px-2 py-1 text-xs rounded-full ${n.type==='Observation'?'bg-blue-100 text-blue-800':n.type==='Assessment'?'bg-green-100 text-green-800':'bg-purple-100 text-purple-800'}`}>{n.type}</span>
+                    {(() => {
+                      let cls = 'bg-purple-100 text-purple-800';
+                      if (n.type === 'Observation') cls = 'bg-blue-100 text-blue-800';
+                      else if (n.type === 'Assessment') cls = 'bg-green-100 text-green-800';
+                      return <span className={`px-2 py-1 text-xs rounded-full ${cls}`}>{n.type}</span>;
+                    })()}
                   </div>
                   <div className="mt-2 text-sm text-gray-700 whitespace-pre-line">{n.content}</div>
                 </li>
@@ -279,24 +294,24 @@ export default function DoctorPatientDetails() {
       <Modal open={isRxOpen} onClose={() => setIsRxOpen(false)} title={`Add Prescription for ${patient.first_name} ${patient.last_name}`} size="lg">
         <form onSubmit={handleSaveRx} className="grid grid-cols-1 gap-y-4 sm:grid-cols-2 sm:gap-x-4 mt-2">
           <div>
-            <label className="block text-sm text-gray-700">Medication</label>
-            <input className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" name="name" value={rx.name} onChange={(e)=>setRx(r=>({...r,name:e.target.value}))} required />
+            <label htmlFor="rx_name" className="block text-sm text-gray-700">Medication</label>
+            <input id="rx_name" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" name="name" value={rx.name} onChange={(e)=>setRx(r=>({...r,name:e.target.value}))} required />
           </div>
           <div>
-            <label className="block text-sm text-gray-700">Dosage</label>
-            <input className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" name="dosage" value={rx.dosage} onChange={(e)=>setRx(r=>({...r,dosage:e.target.value}))} required />
+            <label htmlFor="rx_dosage" className="block text-sm text-gray-700">Dosage</label>
+            <input id="rx_dosage" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" name="dosage" value={rx.dosage} onChange={(e)=>setRx(r=>({...r,dosage:e.target.value}))} required />
           </div>
           <div>
-            <label className="block text-sm text-gray-700">Frequency</label>
-            <input className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" name="frequency" value={rx.frequency} onChange={(e)=>setRx(r=>({...r,frequency:e.target.value}))} required />
+            <label htmlFor="rx_frequency" className="block text-sm text-gray-700">Frequency</label>
+            <input id="rx_frequency" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" name="frequency" value={rx.frequency} onChange={(e)=>setRx(r=>({...r,frequency:e.target.value}))} required />
           </div>
           <div>
-            <label className="block text-sm text-gray-700">Start Date</label>
-            <input type="date" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" name="startDate" value={rx.startDate} onChange={(e)=>setRx(r=>({...r,startDate:e.target.value}))} required />
+            <label htmlFor="rx_start" className="block text-sm text-gray-700">Start Date</label>
+            <input id="rx_start" type="date" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" name="startDate" value={rx.startDate} onChange={(e)=>setRx(r=>({...r,startDate:e.target.value}))} required />
           </div>
           <div className="sm:col-span-2">
-            <label className="block text-sm text-gray-700">Instructions</label>
-            <textarea rows="3" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" name="instructions" value={rx.instructions} onChange={(e)=>setRx(r=>({...r,instructions:e.target.value}))} />
+            <label htmlFor="rx_instructions" className="block text-sm text-gray-700">Instructions</label>
+            <textarea id="rx_instructions" rows="3" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" name="instructions" value={rx.instructions} onChange={(e)=>setRx(r=>({...r,instructions:e.target.value}))} />
           </div>
           <div className="sm:col-span-2 flex justify-end gap-2">
             <button type="button" onClick={()=>setIsRxOpen(false)} className="px-4 py-2 text-sm bg-white border border-gray-300 rounded-md">Cancel</button>
@@ -309,12 +324,12 @@ export default function DoctorPatientDetails() {
       <Modal open={isDxOpen} onClose={() => setIsDxOpen(false)} title={`Add Diagnosis for ${patient.first_name} ${patient.last_name}`} size="lg">
         <form onSubmit={handleSaveDx} className="mt-2">
           <div>
-            <label className="block text-sm text-gray-700">Assessment</label>
-            <textarea rows="3" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" value={dx.assessment} onChange={(e)=>setDx(d=>({...d, assessment: e.target.value}))} required />
+            <label htmlFor="dx_assessment" className="block text-sm text-gray-700">Assessment</label>
+            <textarea id="dx_assessment" rows="3" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" value={dx.assessment} onChange={(e)=>setDx(d=>({...d, assessment: e.target.value}))} required />
           </div>
           <div className="mt-4">
-            <label className="block text-sm text-gray-700">Plan</label>
-            <textarea rows="4" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" value={dx.plan} onChange={(e)=>setDx(d=>({...d, plan: e.target.value}))} required />
+            <label htmlFor="dx_plan" className="block text-sm text-gray-700">Plan</label>
+            <textarea id="dx_plan" rows="4" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" value={dx.plan} onChange={(e)=>setDx(d=>({...d, plan: e.target.value}))} required />
           </div>
           <div className="mt-6 flex justify-end gap-2">
             <button type="button" onClick={()=>setIsDxOpen(false)} className="px-4 py-2 text-sm bg-white border border-gray-300 rounded-md">Cancel</button>

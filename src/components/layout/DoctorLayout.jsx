@@ -227,7 +227,7 @@ export default function DoctorLayout() {
                 </Transition.Child>
                 <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
                   <div className="flex-shrink-0 flex items-center px-4">
-                    <div className="text-white font-bold text-lg">RelayLoop</div>
+                    <img src="/relyloop.svg" alt="RelayLoop" className="h-6 w-auto" />
                     <span className="ml-2 px-2 py-1 text-xs bg-white text-green-700 rounded-lg">Doctor</span>
                   </div>
                   <nav className="mt-5 px-2 space-y-1">
@@ -276,21 +276,7 @@ export default function DoctorLayout() {
                       />
                       Predictions
                     </Link>
-                    <Link
-                      to="/doctor/settings"
-                      className={`${
-                        location.pathname === '/doctor/settings'
-                          ? 'bg-green-800 text-white'
-                          : 'text-white hover:bg-green-600'
-                      } group flex items-center px-2 py-2 text-base font-medium rounded-md`}
-                      onClick={() => setSidebarOpen(false)}
-                    >
-                      <SettingsIcon
-                        className="mr-4 flex-shrink-0 h-6 w-6 text-green-300"
-                        aria-hidden="true"
-                      />
-                      Settings
-                    </Link>
+                    {/* Settings removed for doctor sidebar */}
                   </nav>
                 </div>
                 <div className="flex-shrink-0 flex border-t border-green-800 p-4">
@@ -326,7 +312,7 @@ export default function DoctorLayout() {
         <div className="flex-1 flex flex-col min-h-0 bg-green-700">
           <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
             <div className="flex items-center flex-shrink-0 px-4">
-              <div className="text-white font-bold text-lg">RelayLoop</div>
+              <img src="/relyloop.svg" alt="RelayLoop" className="h-6 w-auto" />
               <span className="ml-2 px-2 py-1 text-xs bg-white text-green-700 rounded-lg">Doctor</span>
             </div>
             <nav className="mt-5 flex-1 px-2 space-y-1">
@@ -372,20 +358,7 @@ export default function DoctorLayout() {
                 />
                 Predictions
               </Link>
-              <Link
-                to="/doctor/settings"
-                className={`${
-                  location.pathname === '/doctor/settings'
-                    ? 'bg-green-800 text-white'
-                    : 'text-white hover:bg-green-600'
-                } group flex items-center px-2 py-2 text-sm font-medium rounded-md`}
-              >
-                <SettingsIcon
-                  className="mr-3 flex-shrink-0 h-6 w-6 text-green-300"
-                  aria-hidden="true"
-                />
-                Settings
-              </Link>
+              {/* Settings removed for doctor sidebar */}
             </nav>
           </div>
           <div className="flex-shrink-0 flex border-t border-green-800 p-4">

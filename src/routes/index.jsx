@@ -29,6 +29,7 @@ import DoctorPatientEdit from '../pages/doctor/DoctorPatientEdit';
 import DoctorDashboard from '../pages/doctor/DoctorDashboard';
 import DoctorPatients from '../pages/doctor/DoctorPatients';
 import DoctorPatientDetails from '../pages/doctor/DoctorPatientDetails';
+import DoctorPredictions from '../pages/doctor/DoctorPredictions';
 
 export default function AppRoutes() {
   return (
@@ -67,8 +68,8 @@ export default function AppRoutes() {
           <Route path="patients/:patientId" element={<DoctorPatientDetails />} />
           <Route path="patients/:patientId/edit" element={<DoctorPatientEdit />} />
           <Route path="patients/new" element={<DoctorPatientNew />} />
-          <Route path="predictions" element={<DoctorDashboard />} />
-          <Route path="analytics" element={<DoctorDashboard />} />
+          <Route path="predictions" element={<DoctorPredictions />} />
+          <Route path="analytics" element={<DoctorPredictions />} />
           <Route path="" element={<Navigate to="/doctor/patients" replace />} />
         </Route>
       </Route>
