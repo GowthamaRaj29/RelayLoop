@@ -13,10 +13,6 @@ import PatientDetails from '../pages/admin/PatientDetails';
 import Departments from '../pages/admin/Departments';
 import Predictions from '../pages/admin/Predictions';
 import PredictionDetails from '../pages/admin/PredictionDetails';
-import Models from '../pages/admin/Models';
-import ModelDetails from '../pages/admin/ModelDetails';
-import BatchJobs from '../pages/admin/BatchJobs';
-import AuditLogs from '../pages/admin/AuditLogs';
 import Analytics from '../pages/admin/Analytics';
 import NursePatients from '../pages/nurse/NursePatients';
 import NursePatientNew from '../pages/nurse/NursePatientNew';
@@ -50,10 +46,6 @@ export default function AppRoutes() {
           <Route path="departments" element={<Departments />} />
           <Route path="predictions" element={<Predictions />} />
           <Route path="predictions/:predictionId" element={<PredictionDetails />} />
-          <Route path="models" element={<Models />} />
-          <Route path="models/:id" element={<ModelDetails />} />
-          <Route path="batch-jobs" element={<BatchJobs />} />
-          <Route path="audit-logs" element={<AuditLogs />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="settings" element={<SystemSettings />} />
           <Route path="" element={<Navigate to="/admin/dashboard" replace />} />
