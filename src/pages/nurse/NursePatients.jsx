@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useOutletContext, useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import { getPatientsByDepartment } from '../../utils/patientsStore';
+import { patientAPI } from '../../services/api';
 
 // Helper functions
 function calculateAge(dob) {
@@ -60,17 +60,46 @@ export default function NursePatients() {
   const fetchPatients = useCallback(async () => {
     try {
       setIsLoading(true);
-      const data = getPatientsByDepartment(currentDepartment) || [];
-      // small delay to simulate network
-      await new Promise(r => setTimeout(r, 200));
+      setError(null);
+      
+      // Fetch patients from API with department filtering temporarily removed
+      console.log('Making API call to patientAPI.getPatients');
+      
+      // Temporarily remove department filter to debug
+      const response = await patientAPI.getPatients(); // Remove currentDepartment parameter
+      console.log('API response received:', response);
+      console.log('API response type:', typeof response);
+      console.log('API response keys:', Object.keys(response || {}));
+      console.log('Full response structure:', JSON.stringify(response, null, 2));
+      
+      const data = response.data || response.patients || [];
+      console.log('Extracted patients data:', data);
+      console.log('Number of patients:', Array.isArray(data) ? data.length : 'Not an array');
+      console.log('Data type:', typeof data, Array.isArray(data) ? 'is array' : 'not array');
+      
+      if (Array.isArray(data) && data.length > 0) {
+        console.log('First patient object:', data[0]);
+        console.log('First patient keys:', Object.keys(data[0] || {}));
+        console.log('First patient first_name:', data[0]?.first_name);
+        console.log('First patient last_name:', data[0]?.last_name);
+        console.log('First patient mrn:', data[0]?.mrn);
+      }
+      
       setPatients(data);
     } catch (err) {
-      console.error('Error fetching patients:', err);
-      setError('Failed to load patient data. Please try again.');
+      console.error('Error fetching patients from API:', err);
+      console.error('Error details:', {
+        message: err.message,
+        stack: err.stack,
+        name: err.name
+      });
+      setError(`Failed to load patient data: ${err.message}. Please check if the backend server is running.`);
+      // Fallback to empty array instead of localStorage
+      setPatients([]);
     } finally {
       setIsLoading(false);
     }
-  }, [currentDepartment]);
+  }, []); // Remove currentDepartment dependency to prevent infinite re-renders
   // Now use the fetchPatients function in useEffect
   useEffect(() => {
     fetchPatients();
@@ -89,15 +118,15 @@ export default function NursePatients() {
   };
   
   // Filter patients based on search term
-  const filteredPatients = patients.filter(
-    (patient) => {
-      const fullName = `${patient.first_name} ${patient.last_name}`.toLowerCase();
-      const search = searchTerm.toLowerCase();
-      return fullName.includes(search) || 
-             patient.mrn.toLowerCase().includes(search) ||
-             (patient.medical_conditions?.some(condition => condition.toLowerCase().includes(search)));
-    }
-  );
+  const filteredPatients = searchTerm
+    ? patients.filter(p => 
+        `${p.first_name} ${p.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.mrn.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.medical_conditions && p.medical_conditions.some(condition => 
+          condition.toLowerCase().includes(searchTerm.toLowerCase())
+        ))
+      )
+    : patients || [];
   
   // Loading state
   if (isLoading) {

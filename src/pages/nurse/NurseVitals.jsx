@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import Modal from '../../components/ui/Modal';
-import { getPatientsByDepartment, updatePatient } from '../../utils/patientsStore';
+import { patientAPI, vitalSignsAPI } from '../../services/api';
+import { useAuth } from '../../hooks/useAuth';
 
 const NurseVitals = () => {
   const navigate = useNavigate();
   const [currentDepartment] = useOutletContext();
+  const { user } = useAuth();
 
   // Utility functions
   const formatDate = (dateString) => {
@@ -53,12 +55,18 @@ const NurseVitals = () => {
   const loadPatients = useCallback(async () => {
     try {
       setIsLoading(true);
-      const data = getPatientsByDepartment(currentDepartment) || [];
+      // Temporarily fetch all patients without department filtering for debugging
+      console.log('NurseVitals: Fetching patients for department:', currentDepartment);
+      const response = await patientAPI.getPatients(); // Remove department filter temporarily
+      console.log('NurseVitals: API response:', response);
+      const data = response.data || response.patients || [];
+      console.log('NurseVitals: Patients data:', data);
       setPatients(data);
       setError(null);
     } catch (err) {
-      setError('Failed to fetch patients');
+      setError(`Failed to fetch patients: ${err.message}`);
       console.error('Error fetching patients:', err);
+      setPatients([]); // Set empty array instead of keeping old data
     } finally {
       setIsLoading(false);
     }
@@ -112,21 +120,32 @@ const NurseVitals = () => {
     try {
       setIsSubmitting(true);
       
-      // Simulate network
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Prepare vital signs data for API
+      const vitalSignsData = {
+        patient_id: selectedPatient.id,
+        temperature: parseFloat(vitalsData.temperature) || null,
+        heart_rate: parseInt(vitalsData.heartRate) || null,
+        blood_pressure_systolic: vitalsData.bloodPressure ? parseInt(vitalsData.bloodPressure.split('/')[0]) || null : null,
+        blood_pressure_diastolic: vitalsData.bloodPressure ? parseInt(vitalsData.bloodPressure.split('/')[1]) || null : null,
+        respiratory_rate: parseInt(vitalsData.respiratoryRate) || null,
+        oxygen_saturation: parseFloat(vitalsData.oxygenSaturation) || null,
+        weight: parseFloat(vitalsData.weight) || null,
+        height: parseFloat(vitalsData.height) || null,
+        notes: vitalsData.notes || '',
+        recorded_by: user?.email || `Nurse (${currentDepartment || 'Unknown Dept'})`
+      };
 
-      // Persist vitals to store and update local state
-      const updated = updatePatient(selectedPatient.id, {
-        vitals: {
-          ...vitalsData,
-          lastUpdated: new Date().toISOString()
-        }
-      });
-      setPatients(prev => prev.map(p => (p.id === updated.id ? updated : p)));
+      // Save to backend/Supabase via API
+      const response = await vitalSignsAPI.createVitalSigns(vitalSignsData);
+      console.log('Vital signs saved:', response);
+      
+      // Refresh patients data to get updated info
+      await loadPatients();
+      
       setIsSuccessModalOpen(true);
     } catch (err) {
       console.error('Failed to save vitals', err);
-      alert('Failed to save vitals. Please try again.');
+      alert(`Failed to save vitals: ${err.message}. Please try again.`);
     } finally {
       setIsSubmitting(false);
     }

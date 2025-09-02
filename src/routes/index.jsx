@@ -22,7 +22,6 @@ import NurseVitals from '../pages/nurse/NurseVitals';
 import NotFound from '../pages/common/NotFound';
 import DoctorPatientNew from '../pages/doctor/DoctorPatientNew';
 import DoctorPatientEdit from '../pages/doctor/DoctorPatientEdit';
-import DoctorDashboard from '../pages/doctor/DoctorDashboard';
 import DoctorPatients from '../pages/doctor/DoctorPatients';
 import DoctorPatientDetails from '../pages/doctor/DoctorPatientDetails';
 import DoctorPredictions from '../pages/doctor/DoctorPredictions';
@@ -55,13 +54,11 @@ export default function AppRoutes() {
       {/* Protected doctor routes */}
       <Route element={<PrivateRoute allowedRoles={['doctor']} />}>
         <Route path="/doctor" element={<DoctorLayout />}>
-          <Route path="dashboard" element={<DoctorDashboard />} />
           <Route path="patients" element={<DoctorPatients />} />
           <Route path="patients/:patientId" element={<DoctorPatientDetails />} />
           <Route path="patients/:patientId/edit" element={<DoctorPatientEdit />} />
           <Route path="patients/new" element={<DoctorPatientNew />} />
           <Route path="predictions" element={<DoctorPredictions />} />
-          <Route path="analytics" element={<DoctorPredictions />} />
           <Route path="" element={<Navigate to="/doctor/patients" replace />} />
         </Route>
       </Route>

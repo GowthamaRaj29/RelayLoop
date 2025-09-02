@@ -1,18 +1,26 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
 import Modal from '../../components/ui/Modal';
-import { getPatientById, appendVitals, addNote, addMedication } from '../../utils/patientsStore';
+import { patientAPI, vitalSignsAPI } from '../../services/api';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function NursePatientDetails() {
   const { patientId } = useParams();
   const navigate = useNavigate();
   const [currentDepartment] = useOutletContext();
+  const { user } = useAuth();
   const [patient, setPatient] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Add vital signs state
   const [isAddVitalsModalOpen, setIsAddVitalsModalOpen] = useState(false);
+  
+  // Notes state
   const [isAddNoteModalOpen, setIsAddNoteModalOpen] = useState(false);
+  
+  // Vitals form data
   const [vitalsData, setVitalsData] = useState({
     temperature: '',
     heartRate: '',
@@ -23,10 +31,14 @@ export default function NursePatientDetails() {
     height: '',
     notes: ''
   });
+  
+  // Notes form data
   const [noteData, setNoteData] = useState({
     content: '',
     type: 'Observation'
   });
+  
+  // Medications state
   const [isAddMedicationOpen, setIsAddMedicationOpen] = useState(false);
   const [medData, setMedData] = useState({ name: '', dosage: '', frequency: '', startDate: '', instructions: '', addedBy: 'Nurse' });
   
@@ -35,335 +47,44 @@ export default function NursePatientDetails() {
     const fetchPatientData = async () => {
       try {
         setIsLoading(true);
-        // Prefer locally persisted patients first (added from Add Patient flow)
-        const local = getPatientById(patientId);
-        if (local) {
-          if (local.department !== currentDepartment) {
-            setError(`You don't have access to this patient's information. This patient belongs to ${local.department} department.`);
-          } else {
-            setPatient(local);
-            setPatient({
-              ...local,
-              vitals: Array.isArray(local.vitals) ? local.vitals : [],
-              medications: Array.isArray(local.medications) ? local.medications : [],
-              notes_history: Array.isArray(local.notes_history) ? local.notes_history : []
-            });
-          }
-          setIsLoading(false);
-          return;
-        }
+        setError(null);
         
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 800));
+        console.log('Fetching patient with ID:', patientId);
         
-        // Mock patient data
-        const mockPatients = {
-          '1': {
-            id: '1',
-            mrn: 'MRN12345',
-            first_name: 'John',
-            last_name: 'Doe',
-            dob: '1980-05-15',
-            gender: 'Male',
-            department: 'Cardiology',
-            attending_doctor: 'Dr. Smith',
-            phone: '(555) 987-6543',
-            email: 'john.doe@example.com',
-            address: '123 Main St, Anytown, CA',
-            insurance: 'Blue Cross Blue Shield',
-            room: '205-A',
-            admitDate: '2025-08-28',
-            status: 'Stable',
-            allergies: ['Penicillin', 'Shellfish'],
-            medical_conditions: ['Coronary Artery Disease', 'Hypertension'],
-            vitals: [
-              { 
-                id: 1,
-                date: '2025-09-01T08:30:00',
-                temperature: '98.6',
-                heartRate: '78',
-                bloodPressure: '130/85',
-                respiratoryRate: '16',
-                oxygenSaturation: '97',
-                weight: '82',
-                height: '180',
-                notes: 'Patient rested well overnight.'
-              },
-              { 
-                id: 2,
-                date: '2025-08-31T16:45:00',
-                temperature: '99.1',
-                heartRate: '82',
-                bloodPressure: '135/88',
-                respiratoryRate: '18',
-                oxygenSaturation: '96',
-                weight: '82',
-                height: '180',
-                notes: 'Patient reports mild chest discomfort.'
-              },
-              { 
-                id: 3,
-                date: '2025-08-31T08:30:00',
-                temperature: '98.8',
-                heartRate: '75',
-                bloodPressure: '132/85',
-                respiratoryRate: '17',
-                oxygenSaturation: '98',
-                weight: '82',
-                height: '180',
-                notes: 'Vitals within normal range.'
-              }
-            ],
-            medications: [
-              {
-                name: 'Lisinopril',
-                dosage: '10mg',
-                frequency: 'Once daily',
-                startDate: '2025-08-28',
-                instructions: 'Take in the morning with food'
-              },
-              {
-                name: 'Aspirin',
-                dosage: '81mg',
-                frequency: 'Once daily',
-                startDate: '2025-08-28',
-                instructions: 'Take with food'
-              },
-              {
-                name: 'Atorvastatin',
-                dosage: '20mg',
-                frequency: 'Once daily',
-                startDate: '2025-08-28',
-                instructions: 'Take in the evening'
-              }
-            ],
-            notes: [
-              {
-                id: 1,
-                date: '2025-09-01T09:15:00',
-                author: 'Nurse Johnson',
-                type: 'Observation',
-                content: 'Patient complains of mild chest pain when breathing deeply. Notified Dr. Smith.'
-              },
-              {
-                id: 2,
-                date: '2025-08-31T14:30:00',
-                author: 'Dr. Smith',
-                type: 'Assessment',
-                content: 'ECG shows normal sinus rhythm. Continue monitoring.'
-              },
-              {
-                id: 3,
-                date: '2025-08-30T10:45:00',
-                author: 'Nurse Williams',
-                type: 'Medication',
-                content: 'Patient experienced slight dizziness after morning medications. Vitals normal, continued observation recommended.'
-              }
-            ],
-            appointments: [
-              {
-                id: 1,
-                date: '2025-09-02T11:00:00',
-                type: 'ECG',
-                provider: 'Cardiology Lab',
-                status: 'Scheduled'
-              },
-              {
-                id: 2,
-                date: '2025-09-03T10:30:00',
-                type: 'Consultation',
-                provider: 'Dr. Smith',
-                status: 'Scheduled'
-              }
-            ]
-          },
-          '4': {
-            id: '4',
-            mrn: 'MRN12348',
-            first_name: 'Maria',
-            last_name: 'Garcia',
-            dob: '1985-08-12',
-            gender: 'Female',
-            department: 'Cardiology',
-            attending_doctor: 'Dr. Smith',
-            phone: '(555) 123-9876',
-            email: 'maria.garcia@example.com',
-            address: '890 Elm St, Springfield, IL',
-            insurance: 'United Healthcare',
-            room: '208-B',
-            admitDate: '2025-08-30',
-            status: 'Stable',
-            allergies: ['Latex', 'Sulfa drugs'],
-            medical_conditions: ['Arrhythmia', 'Diabetes Type 2'],
-            vitals: [
-              { 
-                id: 1,
-                date: '2025-09-01T09:15:00',
-                temperature: '98.2',
-                heartRate: '72',
-                bloodPressure: '118/75',
-                respiratoryRate: '14',
-                oxygenSaturation: '98',
-                weight: '65',
-                height: '165',
-                notes: 'Patient feels well.'
-              },
-              { 
-                id: 2,
-                date: '2025-08-31T09:30:00',
-                temperature: '98.4',
-                heartRate: '75',
-                bloodPressure: '120/78',
-                respiratoryRate: '16',
-                oxygenSaturation: '97',
-                weight: '65',
-                height: '165',
-                notes: 'Blood sugar level: 110 mg/dL'
-              }
-            ],
-            medications: [
-              {
-                name: 'Metformin',
-                dosage: '500mg',
-                frequency: 'Twice daily',
-                startDate: '2025-08-30',
-                instructions: 'Take with meals'
-              },
-              {
-                name: 'Amiodarone',
-                dosage: '200mg',
-                frequency: 'Once daily',
-                startDate: '2025-08-30',
-                instructions: 'Take in the morning'
-              }
-            ],
-            notes: [
-              {
-                id: 1,
-                date: '2025-09-01T10:00:00',
-                author: 'Nurse Adams',
-                type: 'Observation',
-                content: 'Patient reports improved energy levels today.'
-              },
-              {
-                id: 2,
-                date: '2025-08-31T11:15:00',
-                author: 'Dr. Smith',
-                type: 'Assessment',
-                content: 'Arrhythmia appears controlled. Monitor blood glucose levels.'
-              }
-            ],
-            appointments: [
-              {
-                id: 1,
-                date: '2025-09-02T14:30:00',
-                type: 'Blood Work',
-                provider: 'Lab',
-                status: 'Scheduled'
-              }
-            ]
-          },
-          '2': {
-            id: '2',
-            mrn: 'MRN12346',
-            first_name: 'Jane',
-            last_name: 'Smith',
-            dob: '1975-11-08',
-            gender: 'Female',
-            department: 'Neurology',
-            attending_doctor: 'Dr. Johnson',
-            phone: '(555) 456-7890',
-            email: 'jane.smith@example.com',
-            address: '789 Oak St, Riverdale, NY',
-            insurance: 'Aetna',
-            room: '310-A',
-            admitDate: '2025-08-29',
-            status: 'Stable',
-            allergies: ['Codeine'],
-            medical_conditions: ['Migraine', 'Anxiety'],
-            vitals: [
-              { 
-                id: 1,
-                date: '2025-09-01T08:45:00',
-                temperature: '98.4',
-                heartRate: '68',
-                bloodPressure: '115/75',
-                respiratoryRate: '14',
-                oxygenSaturation: '99',
-                weight: '60',
-                height: '162',
-                notes: 'No headache reported today.'
-              }
-            ],
-            medications: [
-              {
-                name: 'Sumatriptan',
-                dosage: '50mg',
-                frequency: 'As needed',
-                startDate: '2025-08-29',
-                instructions: 'Take at onset of migraine'
-              },
-              {
-                name: 'Propranolol',
-                dosage: '40mg',
-                frequency: 'Once daily',
-                startDate: '2025-08-29',
-                instructions: 'Take in the morning'
-              }
-            ],
-            notes: [
-              {
-                id: 1,
-                date: '2025-09-01T09:30:00',
-                author: 'Nurse Thompson',
-                type: 'Observation',
-                content: 'Patient slept well. No migraine symptoms in the past 24 hours.'
-              }
-            ],
-            appointments: [
-              {
-                id: 1,
-                date: '2025-09-03T09:00:00',
-                type: 'MRI',
-                provider: 'Radiology',
-                status: 'Scheduled'
-              }
-            ]
-          }
-        };
+        // Fetch patient from API
+        const response = await patientAPI.getPatient(patientId);
+        const patientData = response.data || response;
         
-        const selectedPatient = mockPatients[patientId];
+        console.log('Retrieved patient data:', patientData);
+        console.log('Current department:', currentDepartment);
+        console.log('Patient department:', patientData.department);
         
-        if (!selectedPatient) {
-          setError(`Patient with ID ${patientId} not found`);
-          return;
-        }
+        // Temporarily disable department check for testing
+        // Check department access - use 'department' field, not 'department_id'
+        // if (patientData.department !== currentDepartment) {
+        //   setError(`You don't have access to this patient's information. This patient belongs to a different department.`);
+        //   return;
+        // }
         
-        // Check if patient is in the current department
-        if (selectedPatient.department !== currentDepartment) {
-          setError(`You don't have access to this patient's information. This patient belongs to ${selectedPatient.department} department.`);
-          return;
-        }
-        
-        // Normalize mock patient to ensure arrays exist and notes_history is populated
+        // Ensure arrays are properly initialized
         setPatient({
-          ...selectedPatient,
-          vitals: Array.isArray(selectedPatient.vitals) ? selectedPatient.vitals : [],
-          medications: Array.isArray(selectedPatient.medications) ? selectedPatient.medications : [],
-          notes_history: Array.isArray(selectedPatient.notes_history)
-            ? selectedPatient.notes_history
-            : (Array.isArray(selectedPatient.notes) ? selectedPatient.notes : [])
+          ...patientData,
+          vitals: Array.isArray(patientData.vitals) ? patientData.vitals : [],
+          medications: Array.isArray(patientData.medications) ? patientData.medications : [],
+          notes_history: Array.isArray(patientData.notes_history) ? patientData.notes_history : []
         });
         
       } catch (err) {
         console.error('Error fetching patient data:', err);
-        setError('Failed to load patient data. Please try again.');
+        setError(`Failed to load patient data: ${err.message}. Please check if the backend server is running.`);
       } finally {
         setIsLoading(false);
       }
     };
-    
-    fetchPatientData();
+
+    if (patientId) {
+      fetchPatientData();
+    }
   }, [patientId, currentDepartment]);
   
   const handleGoBack = () => {
@@ -429,11 +150,60 @@ export default function NursePatientDetails() {
     }));
   };
   
-  const handleSubmitVitals = (e) => {
+  const handleSubmitVitals = async (e) => {
     e.preventDefault();
-    const updated = appendVitals(patient.id, vitalsData) || patient;
-    setPatient(updated);
-    handleCloseVitalsModal();
+    try {
+      // Prepare vital signs data for the API
+      const vitalSignsData = {
+        patient_id: patient.id,
+        temperature: parseFloat(vitalsData.temperature) || null,
+        heart_rate: parseInt(vitalsData.heartRate) || null,
+        blood_pressure_systolic: vitalsData.bloodPressure ? parseInt(vitalsData.bloodPressure.split('/')[0]) : null,
+        blood_pressure_diastolic: vitalsData.bloodPressure ? parseInt(vitalsData.bloodPressure.split('/')[1]) : null,
+        respiratory_rate: parseInt(vitalsData.respiratoryRate) || null,
+        oxygen_saturation: parseInt(vitalsData.oxygenSaturation) || null,
+        weight: parseFloat(vitalsData.weight) || null,
+        height: parseFloat(vitalsData.height) || null,
+        notes: vitalsData.notes || null,
+        recorded_by: user?.email || `Nurse (${currentDepartment || 'Unknown Dept'})`
+      };
+
+      // Remove null values
+      Object.keys(vitalSignsData).forEach(key => 
+        vitalSignsData[key] === null && delete vitalSignsData[key]
+      );
+
+      // Save to backend/Supabase
+      const response = await vitalSignsAPI.createVitalSigns(vitalSignsData);
+      console.log('Vital signs saved:', response);
+
+      // Refresh patient data to show the new vital signs
+      const patientResponse = await patientAPI.getPatient(patient.id);
+      setPatient({
+        ...patientResponse.data,
+        vitals: Array.isArray(patientResponse.data.vitals) ? patientResponse.data.vitals : [],
+        medications: Array.isArray(patientResponse.data.medications) ? patientResponse.data.medications : [],
+        notes_history: Array.isArray(patientResponse.data.notes_history) ? patientResponse.data.notes_history : []
+      });
+
+      handleCloseVitalsModal();
+      
+      // Reset form
+      setVitalsData({
+        temperature: '',
+        heartRate: '',
+        bloodPressure: '',
+        respiratoryRate: '',
+        oxygenSaturation: '',
+        weight: '',
+        height: '',
+        notes: ''
+      });
+
+    } catch (error) {
+      console.error('Error saving vital signs:', error);
+      alert(`Failed to save vital signs: ${error.message}`);
+    }
   };
 
   const handleOpenNoteModal = () => {
@@ -456,11 +226,41 @@ export default function NursePatientDetails() {
     }));
   };
   
-  const handleSubmitNote = (e) => {
+  const handleSubmitNote = async (e) => {
     e.preventDefault();
-    const updated = addNote(patient.id, { author: 'Nurse', ...noteData }) || patient;
-    setPatient(updated);
-    handleCloseNoteModal();
+    try {
+      const noteData_api = {
+        patient_id: patient.id,
+        content: noteData.content,
+        type: noteData.type,
+        author: user?.email || `Nurse (${currentDepartment || 'Unknown Dept'})`
+      };
+
+      // Save to backend/Supabase
+      const response = await patientAPI.addNote(patient.id, noteData_api);
+      console.log('Note saved:', response);
+
+      // Refresh patient data to show the new note
+      const patientResponse = await patientAPI.getPatient(patient.id);
+      setPatient({
+        ...patientResponse.data,
+        vitals: Array.isArray(patientResponse.data.vitals) ? patientResponse.data.vitals : [],
+        medications: Array.isArray(patientResponse.data.medications) ? patientResponse.data.medications : [],
+        notes_history: Array.isArray(patientResponse.data.notes_history) ? patientResponse.data.notes_history : []
+      });
+
+      handleCloseNoteModal();
+      
+      // Reset form
+      setNoteData({
+        content: '',
+        type: 'Observation'
+      });
+
+    } catch (error) {
+      console.error('Error saving note:', error);
+      alert(`Failed to save note: ${error.message}`);
+    }
   };
 
   const handleOpenMedicationModal = () => {
@@ -472,11 +272,48 @@ export default function NursePatientDetails() {
     const { name, value } = e.target;
     setMedData((prev) => ({ ...prev, [name]: value }));
   };
-  const handleSubmitMedication = (e) => {
+  const handleSubmitMedication = async (e) => {
     e.preventDefault();
-    const updated = addMedication(patient.id, medData) || patient;
-    setPatient(updated);
-    handleCloseMedicationModal();
+    try {
+      const medicationData = {
+        patient_id: patient.id,
+        name: medData.name,
+        dosage: medData.dosage,
+        frequency: medData.frequency,
+        start_date: medData.startDate,
+        instructions: medData.instructions,
+        added_by: 'Nurse'
+      };
+
+      // Save to backend/Supabase
+      const response = await patientAPI.addMedication(patient.id, medicationData);
+      console.log('Medication saved:', response);
+
+      // Refresh patient data to show the new medication
+      const patientResponse = await patientAPI.getPatient(patient.id);
+      setPatient({
+        ...patientResponse.data,
+        vitals: Array.isArray(patientResponse.data.vitals) ? patientResponse.data.vitals : [],
+        medications: Array.isArray(patientResponse.data.medications) ? patientResponse.data.medications : [],
+        notes_history: Array.isArray(patientResponse.data.notes_history) ? patientResponse.data.notes_history : []
+      });
+
+      handleCloseMedicationModal();
+      
+      // Reset form
+      setMedData({ 
+        name: '', 
+        dosage: '', 
+        frequency: '', 
+        startDate: '', 
+        instructions: '', 
+        addedBy: 'Nurse' 
+      });
+
+    } catch (error) {
+      console.error('Error saving medication:', error);
+      alert(`Failed to save medication: ${error.message}`);
+    }
   };
   
   // Show loading state
@@ -786,19 +623,23 @@ export default function NursePatientDetails() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500">Heart Rate</p>
-                    <p className="mt-1 text-lg font-semibold text-gray-900">{patient.vitals[0].heartRate} BPM</p>
+                    <p className="mt-1 text-lg font-semibold text-gray-900">{patient.vitals[0].heart_rate} BPM</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500">Blood Pressure</p>
-                    <p className="mt-1 text-lg font-semibold text-gray-900">{patient.vitals[0].bloodPressure} mmHg</p>
+                    <p className="mt-1 text-lg font-semibold text-gray-900">
+                      {patient.vitals[0].blood_pressure_systolic && patient.vitals[0].blood_pressure_diastolic 
+                        ? `${patient.vitals[0].blood_pressure_systolic}/${patient.vitals[0].blood_pressure_diastolic}` 
+                        : '-'} mmHg
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500">Respiratory Rate</p>
-                    <p className="mt-1 text-lg font-semibold text-gray-900">{patient.vitals[0].respiratoryRate} br/min</p>
+                    <p className="mt-1 text-lg font-semibold text-gray-900">{patient.vitals[0].respiratory_rate} br/min</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500">Oxygen Saturation</p>
-                    <p className="mt-1 text-lg font-semibold text-gray-900">{patient.vitals[0].oxygenSaturation}%</p>
+                    <p className="mt-1 text-lg font-semibold text-gray-900">{patient.vitals[0].oxygen_saturation}%</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-500">Weight</p>
@@ -911,16 +752,18 @@ export default function NursePatientDetails() {
                         {vital.temperature}°F
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {vital.heartRate} BPM
+                        {vital.heart_rate} BPM
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {vital.bloodPressure}
+                        {vital.blood_pressure_systolic && vital.blood_pressure_diastolic 
+                          ? `${vital.blood_pressure_systolic}/${vital.blood_pressure_diastolic}` 
+                          : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {vital.respiratoryRate}/min
+                        {vital.respiratory_rate}/min
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {vital.oxygenSaturation}%
+                        {vital.oxygen_saturation}%
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
                         {vital.notes || '-'}
@@ -952,7 +795,7 @@ export default function NursePatientDetails() {
           </div>
           
           {/* Doctor-added current medications */}
-          {patient.medications && patient.medications.filter(m => m.addedBy !== 'Nurse').length > 0 ? (
+          {patient.medications && patient.medications.filter(m => m.prescribed_by !== 'Nurse').length > 0 ? (
             <div className="bg-white shadow overflow-hidden sm:rounded-lg">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -966,13 +809,13 @@ export default function NursePatientDetails() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {patient.medications.filter(m => m.addedBy !== 'Nurse').map((med) => (
-                    <tr key={med.id || med.name + med.startDate}>
+                  {patient.medications.filter(m => m.prescribed_by !== 'Nurse').map((med) => (
+                    <tr key={med.id || med.name + med.start_date}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{med.name}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{med.dosage}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{med.frequency}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(med.startDate)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{med.addedBy || 'Doctor'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(med.start_date)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{med.prescribed_by || 'Doctor'}</td>
                       <td className="px-6 py-4 text-sm text-gray-500">{med.instructions}</td>
                     </tr>
                   ))}
@@ -988,7 +831,7 @@ export default function NursePatientDetails() {
           {/* Past Medications added by Nurse */}
           <div>
             <h4 className="text-md font-medium text-gray-900">Past Medications (history, added by Nurse)</h4>
-            {patient.medications && patient.medications.filter(m => m.addedBy === 'Nurse').length > 0 ? (
+            {patient.medications && patient.medications.filter(m => m.prescribed_by === 'Nurse').length > 0 ? (
               <div className="mt-2 bg-white shadow overflow-hidden sm:rounded-lg">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
@@ -1001,12 +844,12 @@ export default function NursePatientDetails() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {patient.medications.filter(m => m.addedBy === 'Nurse').map((med) => (
-                      <tr key={med.id || med.name + med.startDate}>
+                    {patient.medications.filter(m => m.prescribed_by === 'Nurse').map((med) => (
+                      <tr key={med.id || med.name + med.start_date}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{med.name}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{med.dosage}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{med.frequency}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(med.startDate)}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(med.start_date)}</td>
                         <td className="px-6 py-4 text-sm text-gray-500">{med.instructions}</td>
                       </tr>
                     ))}

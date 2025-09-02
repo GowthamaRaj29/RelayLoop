@@ -1,15 +1,49 @@
 import { useNavigate, Link, useOutletContext } from 'react-router-dom';
 import PatientForm from '../common/PatientForm';
-import { addPatient } from '../../utils/patientsStore';
+import { patientAPI } from '../../services/api';
 
 export default function NursePatientNew() {
   const navigate = useNavigate();
   const [currentDepartment] = useOutletContext();
 
-  const handleSubmit = (payload) => {
-    addPatient(payload);
-  alert('Patient added successfully');
-    navigate('/nurse/patients');
+  const handleSubmit = async (payload) => {
+    try {
+      // Prepare patient data for the API - match backend DTO exactly
+      const patientData = {
+        first_name: payload.first_name,
+        last_name: payload.last_name,
+        dob: payload.dob,
+        gender: payload.gender,
+        mrn: payload.mrn,
+        department: currentDepartment, // Use 'department' not 'department_id'
+        attending_doctor: payload.attending_doctor,
+        phone: payload.phone || '',
+        email: payload.email || '', // Ensure email is not undefined
+        address: payload.address || '',
+        insurance: payload.insurance || '',
+        room: payload.room || '',
+        medical_conditions: Array.isArray(payload.medical_conditions) 
+          ? payload.medical_conditions 
+          : payload.medical_conditions?.split(',').map(c => c.trim()).filter(c => c) || [],
+        notes: payload.notes || ''
+        // Remove emergency_contact fields as they don't exist in DTO
+      };
+
+      // Remove email if it's empty to avoid validation error
+      if (!patientData.email) {
+        delete patientData.email;
+      }
+
+      // Save to backend/Supabase
+      const response = await patientAPI.createPatient(patientData);
+      console.log('Patient created:', response);
+      
+      alert('Patient added successfully and saved to database!');
+      navigate('/nurse/patients');
+    } catch (error) {
+      console.error('Error creating patient:', error);
+      alert(`Failed to create patient: ${error.message}`);
+    }
   };
 
   return (

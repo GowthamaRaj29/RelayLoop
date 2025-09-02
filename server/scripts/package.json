@@ -1,0 +1,9 @@
+{
+  "name": "setup-relayloop",
+  "scripts": {
+    "setup": "node scripts/setup.js",
+    "install-deps": "npm install",
+    "check-env": "node scripts/check-env.js",
+    "create-db-tables": "node scripts/create-tables.js"
+  }
+}

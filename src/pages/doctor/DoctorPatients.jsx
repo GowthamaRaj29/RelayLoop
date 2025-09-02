@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
-import { getPatientsByDepartment } from '../../utils/patientsStore';
+import { patientAPI } from '../../services/api';
 
 export default function DoctorPatients() {
   const [currentDepartment] = useOutletContext();
@@ -9,10 +9,22 @@ export default function DoctorPatients() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    const list = getPatientsByDepartment(currentDepartment || '');
-    setPatients(list);
-    setLoading(false);
+    const fetchPatients = async () => {
+      try {
+        setLoading(true);
+        // Fetch patients from API instead of localStorage
+        const response = await patientAPI.getPatients(currentDepartment);
+        const data = response.data || response.patients || [];
+        setPatients(data);
+      } catch (error) {
+        console.error('Error fetching patients:', error);
+        setPatients([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPatients();
   }, [currentDepartment]);
 
   const filtered = useMemo(() => {

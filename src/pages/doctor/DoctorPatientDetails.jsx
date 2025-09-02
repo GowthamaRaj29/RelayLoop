@@ -1,11 +1,13 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
 import Modal from '../../components/ui/Modal';
-import { getPatientById, updatePatient, addMedication } from '../../utils/patientsStore';
+import { patientAPI } from '../../services/api';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function DoctorPatientDetails() {
   const { patientId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [currentDepartment] = useOutletContext();
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -19,40 +21,106 @@ export default function DoctorPatientDetails() {
   const [prediction, setPrediction] = useState(null);
 
   useEffect(() => {
-    setLoading(true);
-    const p = getPatientById(patientId);
-    if (!p) {
-      setError('Patient not found');
-      setLoading(false);
-      return;
-    }
-    if (currentDepartment && p.department !== currentDepartment) {
-      setError(`This patient belongs to ${p.department}.`);
-      setLoading(false);
-      return;
-    }
-    setPatient({
-      ...p,
-      vitals: Array.isArray(p.vitals) ? p.vitals : [],
-      medications: Array.isArray(p.medications) ? p.medications : [],
-      notes_history: Array.isArray(p.notes_history) ? p.notes_history : [],
-      diagnosis: p.diagnosis || null,
-    });
-    setLoading(false);
+    const fetchPatient = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch patient from API
+        const response = await patientAPI.getPatient(patientId);
+        const patientData = response.data || response;
+        
+        // Check department access
+        if (currentDepartment && patientData.department !== currentDepartment) {
+          setError(`This patient belongs to ${patientData.department}.`);
+          return;
+        }
+        
+        // Set patient with proper array initialization
+        setPatient({
+          ...patientData,
+          vitals: Array.isArray(patientData.vitals) ? patientData.vitals : [],
+          medications: Array.isArray(patientData.medications) ? patientData.medications : [],
+          notes_history: Array.isArray(patientData.notes_history) ? patientData.notes_history : [],
+          diagnosis: patientData.diagnosis || null,
+        });
+      } catch (error) {
+        console.error('Error fetching patient:', error);
+        setError(`Failed to load patient data: ${error.message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPatient();
   }, [patientId, currentDepartment]);
 
-  const handleSaveRx = (e) => {
+  const handleSaveRx = async (e) => {
     e.preventDefault();
-    const updated = addMedication(patient.id, rx);
-    setPatient(updated || patient);
-    setIsRxOpen(false);
+    try {
+      // Prepare medication data for API
+      const medicationData = {
+        patient_id: patient.id,
+        name: rx.name,
+        dosage: rx.dosage,
+        frequency: rx.frequency,
+        start_date: rx.startDate,
+        instructions: rx.instructions,
+        added_by: 'Doctor'
+      };
+      
+      // Save to backend via API
+      const response = await patientAPI.addMedication(patient.id, medicationData);
+      console.log('Medication saved:', response);
+      
+      // Refresh patient data
+      const updatedPatient = await patientAPI.getPatient(patient.id);
+      setPatient({
+        ...updatedPatient.data,
+        vitals: Array.isArray(updatedPatient.data.vitals) ? updatedPatient.data.vitals : [],
+        medications: Array.isArray(updatedPatient.data.medications) ? updatedPatient.data.medications : [],
+        notes_history: Array.isArray(updatedPatient.data.notes_history) ? updatedPatient.data.notes_history : [],
+        diagnosis: updatedPatient.data.diagnosis || null,
+      });
+      
+      setIsRxOpen(false);
+    } catch (error) {
+      console.error('Error saving medication:', error);
+      alert(`Failed to save medication: ${error.message}`);
+    }
   };
 
-  const handleSaveDx = (e) => {
+  const handleSaveDx = async (e) => {
     e.preventDefault();
-    const updated = updatePatient(patient.id, { diagnosis: { ...dx, updatedAt: new Date().toISOString(), addedBy: 'Doctor' } });
-    setPatient(updated || patient);
-    setIsDxOpen(false);
+    try {
+      // Prepare diagnosis note data for API
+      const noteData = {
+        patient_id: patient.id,
+        content: `Assessment: ${dx.assessment}\nPlan: ${dx.plan}`,
+        type: 'Assessment',
+        author: user?.email || `Doctor (${currentDepartment || 'Unknown Dept'})`,
+        date: new Date().toISOString().split('T')[0] // Add current date
+      };
+      
+      // Save diagnosis as a patient note via API
+      const response = await patientAPI.addNote(patient.id, noteData);
+      console.log('Diagnosis saved:', response);
+      
+      // Refresh patient data
+      const updatedPatient = await patientAPI.getPatient(patient.id);
+      setPatient({
+        ...updatedPatient.data,
+        vitals: Array.isArray(updatedPatient.data.vitals) ? updatedPatient.data.vitals : [],
+        medications: Array.isArray(updatedPatient.data.medications) ? updatedPatient.data.medications : [],
+        notes_history: Array.isArray(updatedPatient.data.notes_history) ? updatedPatient.data.notes_history : [],
+        diagnosis: updatedPatient.data.diagnosis || null,
+      });
+      
+      setIsDxOpen(false);
+    } catch (error) {
+      console.error('Error saving diagnosis:', error);
+      alert(`Failed to save diagnosis: ${error.message}`);
+    }
   };
 
   const handlePredict = async () => {
@@ -62,8 +130,8 @@ export default function DoctorPatientDetails() {
     const last = patient.vitals?.[0];
     let riskScore = 0.42;
     if (last) {
-      const hr = parseFloat(last.heartRate || '0');
-      const ox = parseFloat(last.oxygenSaturation || '100');
+      const hr = parseFloat(last.heart_rate || '0');
+      const ox = parseFloat(last.oxygen_saturation || '100');
       if (hr > 100) riskScore += 0.2;
       if (ox < 94) riskScore += 0.25;
     }
@@ -79,7 +147,7 @@ export default function DoctorPatientDetails() {
   const formatDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const formatDateTime = (d) => new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-  const doctorMeds = useMemo(() => (patient?.medications || []).filter(m => m.addedBy !== 'Nurse'), [patient?.medications]);
+  const doctorMeds = useMemo(() => (patient?.medications || []).filter(m => m.prescribed_by !== 'Nurse'), [patient?.medications]);
 
   if (loading) return (<div className="min-h-screen bg-gray-50/50 flex items-center justify-center"><div className="text-gray-500">Loading...</div></div>);
   if (error) return (<div className="p-4 bg-red-50 text-red-700">{error}</div>);
@@ -179,9 +247,13 @@ export default function DoctorPatientDetails() {
                   <tr key={v.id}>
                     <td className="px-6 py-3 text-sm text-gray-900">{formatDateTime(v.date)}</td>
                     <td className="px-6 py-3 text-sm text-gray-900">{v.temperature}°F</td>
-                    <td className="px-6 py-3 text-sm text-gray-900">{v.heartRate}</td>
-                    <td className="px-6 py-3 text-sm text-gray-900">{v.bloodPressure}</td>
-                    <td className="px-6 py-3 text-sm text-gray-900">{v.oxygenSaturation}%</td>
+                    <td className="px-6 py-3 text-sm text-gray-900">{v.heart_rate}</td>
+                    <td className="px-6 py-3 text-sm text-gray-900">
+                      {v.blood_pressure_systolic && v.blood_pressure_diastolic 
+                        ? `${v.blood_pressure_systolic}/${v.blood_pressure_diastolic}` 
+                        : '-'}
+                    </td>
+                    <td className="px-6 py-3 text-sm text-gray-900">{v.oxygen_saturation}%</td>
                     <td className="px-6 py-3 text-sm text-gray-900">{v.notes || '-'}</td>
                   </tr>
                 ))}
@@ -217,8 +289,8 @@ export default function DoctorPatientDetails() {
                       <td className="px-6 py-3 text-sm text-gray-900">{m.name}</td>
                       <td className="px-6 py-3 text-sm text-gray-900">{m.dosage}</td>
                       <td className="px-6 py-3 text-sm text-gray-900">{m.frequency}</td>
-                      <td className="px-6 py-3 text-sm text-gray-900">{formatDate(m.startDate)}</td>
-                      <td className="px-6 py-3 text-sm text-gray-900">{m.addedBy || 'Doctor'}</td>
+                      <td className="px-6 py-3 text-sm text-gray-900">{formatDate(m.start_date)}</td>
+                      <td className="px-6 py-3 text-sm text-gray-900">{m.prescribed_by || 'Doctor'}</td>
                       <td className="px-6 py-3 text-sm text-gray-900">{m.instructions}</td>
                     </tr>
                   ))}
@@ -243,18 +315,18 @@ export default function DoctorPatientDetails() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {(patient.medications || []).filter(m => m.addedBy === 'Nurse').map(m => (
+                    {(patient.medications || []).filter(m => m.prescribed_by === 'Nurse').map(m => (
                       <tr key={m.id}>
                         <td className="px-6 py-3 text-sm text-gray-900">{m.name}</td>
                         <td className="px-6 py-3 text-sm text-gray-900">{m.dosage}</td>
                         <td className="px-6 py-3 text-sm text-gray-900">{m.frequency}</td>
-                        <td className="px-6 py-3 text-sm text-gray-900">{formatDate(m.startDate)}</td>
+                        <td className="px-6 py-3 text-sm text-gray-900">{formatDate(m.start_date)}</td>
                         <td className="px-6 py-3 text-sm text-gray-900">{m.instructions}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                {((patient.medications || []).filter(m => m.addedBy === 'Nurse').length === 0) && (
+                {((patient.medications || []).filter(m => m.prescribed_by === 'Nurse').length === 0) && (
                   <div className="text-center py-4 text-gray-500">No past meds added by nurse.</div>
                 )}
               </div>
@@ -295,26 +367,26 @@ export default function DoctorPatientDetails() {
         <form onSubmit={handleSaveRx} className="grid grid-cols-1 gap-y-4 sm:grid-cols-2 sm:gap-x-4 mt-2">
           <div>
             <label htmlFor="rx_name" className="block text-sm text-gray-700">Medication</label>
-            <input id="rx_name" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" name="name" value={rx.name} onChange={(e)=>setRx(r=>({...r,name:e.target.value}))} required />
+            <input id="rx_name" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-black" name="name" value={rx.name} onChange={(e)=>setRx(r=>({...r,name:e.target.value}))} required />
           </div>
           <div>
             <label htmlFor="rx_dosage" className="block text-sm text-gray-700">Dosage</label>
-            <input id="rx_dosage" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" name="dosage" value={rx.dosage} onChange={(e)=>setRx(r=>({...r,dosage:e.target.value}))} required />
+            <input id="rx_dosage" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-black" name="dosage" value={rx.dosage} onChange={(e)=>setRx(r=>({...r,dosage:e.target.value}))} required />
           </div>
           <div>
             <label htmlFor="rx_frequency" className="block text-sm text-gray-700">Frequency</label>
-            <input id="rx_frequency" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" name="frequency" value={rx.frequency} onChange={(e)=>setRx(r=>({...r,frequency:e.target.value}))} required />
+            <input id="rx_frequency" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-black" name="frequency" value={rx.frequency} onChange={(e)=>setRx(r=>({...r,frequency:e.target.value}))} required />
           </div>
           <div>
             <label htmlFor="rx_start" className="block text-sm text-gray-700">Start Date</label>
-            <input id="rx_start" type="date" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" name="startDate" value={rx.startDate} onChange={(e)=>setRx(r=>({...r,startDate:e.target.value}))} required />
+            <input id="rx_start" type="date" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-black" name="startDate" value={rx.startDate} onChange={(e)=>setRx(r=>({...r,startDate:e.target.value}))} required />
           </div>
           <div className="sm:col-span-2">
             <label htmlFor="rx_instructions" className="block text-sm text-gray-700">Instructions</label>
-            <textarea id="rx_instructions" rows="3" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" name="instructions" value={rx.instructions} onChange={(e)=>setRx(r=>({...r,instructions:e.target.value}))} />
+            <textarea id="rx_instructions" rows="3" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-black" name="instructions" value={rx.instructions} onChange={(e)=>setRx(r=>({...r,instructions:e.target.value}))} />
           </div>
           <div className="sm:col-span-2 flex justify-end gap-2">
-            <button type="button" onClick={()=>setIsRxOpen(false)} className="px-4 py-2 text-sm bg-white border border-gray-300 rounded-md">Cancel</button>
+            <button type="button" onClick={()=>setIsRxOpen(false)} className="px-4 py-2 text-sm bg-white border border-gray-300 rounded-md text-black">Cancel</button>
             <button type="submit" className="px-4 py-2 text-sm text-white bg-indigo-600 rounded-md">Save</button>
           </div>
         </form>
@@ -325,14 +397,14 @@ export default function DoctorPatientDetails() {
         <form onSubmit={handleSaveDx} className="mt-2">
           <div>
             <label htmlFor="dx_assessment" className="block text-sm text-gray-700">Assessment</label>
-            <textarea id="dx_assessment" rows="3" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" value={dx.assessment} onChange={(e)=>setDx(d=>({...d, assessment: e.target.value}))} required />
+            <textarea id="dx_assessment" rows="3" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-black" value={dx.assessment} onChange={(e)=>setDx(d=>({...d, assessment: e.target.value}))} required />
           </div>
           <div className="mt-4">
             <label htmlFor="dx_plan" className="block text-sm text-gray-700">Plan</label>
-            <textarea id="dx_plan" rows="4" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" value={dx.plan} onChange={(e)=>setDx(d=>({...d, plan: e.target.value}))} required />
+            <textarea id="dx_plan" rows="4" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-black" value={dx.plan} onChange={(e)=>setDx(d=>({...d, plan: e.target.value}))} required />
           </div>
           <div className="mt-6 flex justify-end gap-2">
-            <button type="button" onClick={()=>setIsDxOpen(false)} className="px-4 py-2 text-sm bg-white border border-gray-300 rounded-md">Cancel</button>
+            <button type="button" onClick={()=>setIsDxOpen(false)} className="px-4 py-2 text-sm bg-white border border-gray-300 rounded-md text-black">Cancel</button>
             <button type="submit" className="px-4 py-2 text-sm text-white bg-blue-600 rounded-md">Save</button>
           </div>
         </form>

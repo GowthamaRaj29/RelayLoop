@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>RelayLoop API Test</h1>
+    <div id="status">Testing API...</div>
+    <div id="results"></div>
+    
+    <script>
+        const API_BASE_URL = 'http://localhost:3002/api/v1';
+        const results = document.getElementById('results');
+        const status = document.getElementById('status');
+        
+        // Test function
+        async function testAPI() {
+            try {
+                // Test health endpoint
+                status.innerHTML = 'Testing health endpoint...';
+                const healthResponse = await fetch(`${API_BASE_URL}/health`);
+                const healthData = await healthResponse.json();
+                
+                results.innerHTML += '<h3>Health Check:</h3><pre>' + JSON.stringify(healthData, null, 2) + '</pre>';
+                
+                // Test creating a patient
+                status.innerHTML = 'Creating test patient...';
+                const patientData = {
+                    first_name: 'John',
+                    last_name: 'Doe',
+                    dob: '1980-05-15',
+                    gender: 'Male',
+                    mrn: 'MRN12345',
+                    email: 'john.doe@test.com',
+                    phone: '555-123-4567',
+                    address: '123 Test St',
+                    department_id: 'cardiology',
+                    attending_doctor: 'Dr. Smith',
+                    medical_conditions: ['Hypertension'],
+                    allergies: ['Penicillin'],
+                    emergency_contact_name: 'Jane Doe',
+                    emergency_contact_phone: '555-987-6543'
+                };
+                
+                const createResponse = await fetch(`${API_BASE_URL}/patients`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(patientData)
+                });
+                
+                if (createResponse.ok) {
+                    const createdPatient = await createResponse.json();
+                    results.innerHTML += '<h3>Created Patient:</h3><pre>' + JSON.stringify(createdPatient, null, 2) + '</pre>';
+                    
+                    // Test getting all patients
+                    status.innerHTML = 'Fetching all patients...';
+                    const patientsResponse = await fetch(`${API_BASE_URL}/patients`);
+                    const patientsData = await patientsResponse.json();
+                    
+                    results.innerHTML += '<h3>All Patients:</h3><pre>' + JSON.stringify(patientsData, null, 2) + '</pre>';
+                    
+                    status.innerHTML = 'API Test Complete!';
+                } else {
+                    const errorData = await createResponse.json();
+                    results.innerHTML += '<h3>Error Creating Patient:</h3><pre>' + JSON.stringify(errorData, null, 2) + '</pre>';
+                    status.innerHTML = 'API Test Failed - See results';
+                }
+                
+            } catch (error) {
+                results.innerHTML += '<h3>Error:</h3><pre>' + error.message + '</pre>';
+                status.innerHTML = 'API Test Failed - ' + error.message;
+            }
+        }
+        
+        // Run test when page loads
+        testAPI();
+    </script>
+</body>
+</html>

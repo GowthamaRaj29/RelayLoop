@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { RouteDebugger } from '../components/debug/RouteDebugger';
+// import { RouteDebugger } from '../components/debug/RouteDebugger';
 import RoleVerificationOverlay from '../components/ui/RoleVerificationOverlay';
 
 export default function PrivateRoute({ allowedRoles = [] }) {
@@ -97,7 +97,7 @@ export default function PrivateRoute({ allowedRoles = [] }) {
   return (
     <>
       <Outlet />
-      {import.meta.env.DEV && <RouteDebugger />}
+      {/* {import.meta.env.DEV && <RouteDebugger />} */}
     </>
   );
 }

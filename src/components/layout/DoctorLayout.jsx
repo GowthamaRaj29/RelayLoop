@@ -232,21 +232,6 @@ export default function DoctorLayout() {
                   </div>
                   <nav className="mt-5 px-2 space-y-1">
                     <Link
-                      to="/doctor/dashboard"
-                      className={`${
-                        location.pathname === '/doctor/dashboard'
-                          ? 'bg-green-800 text-white'
-                          : 'text-white hover:bg-green-600'
-                      } group flex items-center px-2 py-2 text-base font-medium rounded-md`}
-                      onClick={() => setSidebarOpen(false)}
-                    >
-                      <DashboardIcon
-                        className="mr-4 flex-shrink-0 h-6 w-6 text-green-300"
-                        aria-hidden="true"
-                      />
-                      Dashboard
-                    </Link>
-                    <Link
                       to="/doctor/patients"
                       className={`${
                         location.pathname === '/doctor/patients' || location.pathname.includes('/doctor/patients/')
@@ -316,20 +301,6 @@ export default function DoctorLayout() {
               <span className="ml-2 px-2 py-1 text-xs bg-white text-green-700 rounded-lg">Doctor</span>
             </div>
             <nav className="mt-5 flex-1 px-2 space-y-1">
-              <Link
-                to="/doctor/dashboard"
-                className={`${
-                  location.pathname === '/doctor/dashboard'
-                    ? 'bg-green-800 text-white'
-                    : 'text-white hover:bg-green-600'
-                } group flex items-center px-2 py-2 text-sm font-medium rounded-md`}
-              >
-                <DashboardIcon
-                  className="mr-3 flex-shrink-0 h-6 w-6 text-green-300"
-                  aria-hidden="true"
-                />
-                Dashboard
-              </Link>
               <Link
                 to="/doctor/patients"
                 className={`${
