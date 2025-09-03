@@ -172,6 +172,29 @@ export const vitalSignsAPI = {
 };
 
 // User API functions
+// helper: keep only fields the backend accepts for update
+const sanitizeUserUpdatePayload = (payload = {}) => {
+  const allowed = [
+    'first_name',
+    'last_name',
+    'full_name',
+    'email',
+    'role',
+    'department',
+    'phone',
+    'is_active',
+    'title',
+    'avatar_url'
+  ];
+  const clean = {};
+  for (const k of allowed) {
+    if (payload[k] !== undefined && payload[k] !== null && payload[k] !== '') {
+      clean[k] = payload[k];
+    }
+  }
+  return clean;
+};
+
 export const userAPI = {
   // Get user stats
   async getStats() {
@@ -207,10 +230,15 @@ export const userAPI = {
   },
 
   // Update user (Admin only)
-  async updateUser(id, userData) {
-    return await apiRequest(`/users/${id}`, {
+  async updateUser(id, payload) {
+    const clean = sanitizeUserUpdatePayload(payload);
+
+    // Development guard: ensure forbidden keys never slip through
+    ['id', 'created_at', 'updated_at', 'password'].forEach(k => delete clean[k]);
+
+    return apiRequest(`/users/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(userData),
+  body: JSON.stringify(clean),
     });
   },
 

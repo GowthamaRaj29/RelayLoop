@@ -84,22 +84,39 @@ export default function UserManagement() {
     }
   };
   
-  const handleUserUpdate = async (updatedUser) => {
+  const handleUserUpdate = async (formData) => {
+    if (!selectedUser) return;
+
+    // Build payload with only editable fields
+    const payload = {
+      first_name: formData.first_name?.trim(),
+      last_name: formData.last_name?.trim(),
+      full_name: formData.full_name?.trim(),
+      email: formData.email?.trim(),
+      role: formData.role,                 // 'admin' | 'doctor' | 'nurse'
+      department: formData.department || null,
+      phone: formData.phone || null,
+      is_active:
+        typeof formData.is_active === 'boolean'
+          ? formData.is_active
+          : formData.status
+            ? formData.status === 'active'
+            : undefined,
+      title: formData.title || undefined,
+      avatar_url: formData.avatar_url || undefined,
+    };
+
+    // Strip undefined
+    Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
+
     try {
-      const response = await userAPI.updateUser(updatedUser.id, updatedUser);
-      
-      if (response.statusCode === 200) {
-        // Refresh the user list
-        await fetchUsers();
-        setIsModalOpen(false);
-        setSelectedUser(null);
-        alert('User updated successfully');
-      } else {
-        throw new Error(response.message || 'Failed to update user');
-      }
+      await userAPI.updateUser(selectedUser.id, payload);
+      await fetchUsers();
+      setIsModalOpen(false);
+      setSelectedUser(null);
     } catch (err) {
       console.error('Error updating user:', err);
-      alert(`Failed to update user: ${err.message}`);
+      setError(`Update failed: ${err.message || 'Unknown error'}`);
     }
   };
   
