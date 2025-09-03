@@ -53,17 +53,16 @@ const DoctorPredictions = () => {
 
     // Fetch patients on component mount
   useEffect(() => {
-    const fetchPatients = async () => {
+  const fetchPatients = async () => {
       try {
         setIsLoading(true);
         console.log('Fetching patients for department:', currentDepartment);
         
         const response = await patientAPI.getPatients(currentDepartment);
         console.log('API Response:', response);
-        
-        // The backend returns data in response.data (the patients array)
-        const patientsData = response.data || [];
-        console.log('Patients data:', patientsData);
+    // Backend returns an object: { patients: [...], total: number }
+    const patientsData = response?.patients || response?.data || [];
+    console.log('Patients data:', patientsData);
         
         const patientsWithAge = patientsData.map(patient => ({
           ...patient,
