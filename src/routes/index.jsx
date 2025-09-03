@@ -8,9 +8,8 @@ import AdminDashboard from '../pages/admin/Dashboard';
 import UserManagement from '../pages/admin/UserManagement';
 import SystemSettings from '../pages/admin/Settings';
 import AdminProfile from '../pages/admin/Profile';
-import PatientsNew from '../pages/admin/PatientsNew';
+import Patients from '../pages/admin/Patients';
 import PatientDetails from '../pages/admin/PatientDetails';
-import Departments from '../pages/admin/Departments';
 import Predictions from '../pages/admin/Predictions';
 import PredictionDetails from '../pages/admin/PredictionDetails';
 import Analytics from '../pages/admin/Analytics';
@@ -40,9 +39,8 @@ export default function AppRoutes() {
           <Route path="dashboardnew" element={<AdminDashboard />} />
           <Route path="users" element={<UserManagement />} />
           <Route path="profile" element={<AdminProfile />} />
-          <Route path="patients" element={<PatientsNew />} />
+          <Route path="patients" element={<Patients />} />
           <Route path="patients/:patientId" element={<PatientDetails />} />
-          <Route path="departments" element={<Departments />} />
           <Route path="predictions" element={<Predictions />} />
           <Route path="predictions/:predictionId" element={<PredictionDetails />} />
           <Route path="analytics" element={<Analytics />} />

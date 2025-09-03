@@ -327,8 +327,7 @@ export class MLPredictionService {
         recommendation,
         confidence,
         age_group: ageGroup,
-        predicted_at: new Date().toISOString(),
-        input_data: predictionData
+        predicted_at: new Date().toISOString()
       });
 
       this.logger.log(`ML prediction completed for patient: ${patient.id}, risk level: ${riskLevel}`);
@@ -387,6 +386,33 @@ export class MLPredictionService {
       return predictions || [];
     } catch (error) {
       this.logger.error(`Error fetching predictions: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Get latest prediction for a patient
+   */
+  async getLatestPrediction(patientId: string): Promise<PredictionResultDto | null> {
+    try {
+      const supabase = this.supabaseService.getClient();
+
+      const { data: prediction, error } = await supabase
+        .from('ml_predictions')
+        .select('*')
+        .eq('patient_id', patientId)
+        .order('predicted_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        this.logger.error(`Error fetching latest prediction: ${error.message}`);
+        throw new Error(`Failed to fetch latest prediction: ${error.message}`);
+      }
+
+      return prediction;
+    } catch (error) {
+      this.logger.error(`Error fetching latest prediction: ${error.message}`);
       throw error;
     }
   }

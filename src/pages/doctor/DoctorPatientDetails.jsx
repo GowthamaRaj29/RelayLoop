@@ -125,23 +125,119 @@ export default function DoctorPatientDetails() {
 
   const handlePredict = async () => {
     setPredicting(true);
-    // Simulate compute: use basic heuristic on vitals if present
-    await new Promise(r => setTimeout(r, 800));
-    const last = patient.vitals?.[0];
-    let riskScore = 0.42;
-    if (last) {
-      const hr = parseFloat(last.heart_rate || '0');
-      const ox = parseFloat(last.oxygen_saturation || '100');
-      if (hr > 100) riskScore += 0.2;
-      if (ox < 94) riskScore += 0.25;
+    
+    try {
+      // Use the same default values as the Generate Prediction form for consistency
+      const defaultFormData = {
+        // Chronic Conditions (0=No, 1=Yes) - Use patient's medical conditions
+        diabetes: patient.medical_conditions?.includes('Diabetes') ? 1 : 0,
+        hypertension: patient.medical_conditions?.includes('HyperTension') || 
+                     patient.medical_conditions?.includes('Hypertension') ? 1 : 0,
+        heart_disease: patient.medical_conditions?.includes('Heart Disease') ? 1 : 0,
+        kidney_disease: patient.medical_conditions?.includes('Kidney Disease') ? 1 : 0,
+        respiratory_disease: patient.medical_conditions?.includes('Respiratory Disease') ? 1 : 0,
+        
+        // Hospital Admission Type (exactly one should be 1, others 0)
+        regular_ward_admission: 1,  // Default to regular ward (same as Generate Prediction)
+        semi_intensive_unit_admission: 0,
+        intensive_care_unit_admission: 0,
+        
+        // Lab Values - Use exact same defaults as Generate Prediction form
+        hemoglobin: 13.5,           // g/dL - Normal: Male 13.8-17.2, Female 12.1-15.1
+        hematocrit: 40.0,           // % - Normal: Male 40.7-50.3%, Female 36.1-44.3%
+        platelets: 250,             // x10³/μL - Normal: 150-400
+        red_blood_cells: 4.8,       // x10⁶/μL - Normal: Male 4.7-6.1, Female 4.2-5.4
+        lymphocytes: 2.2,           // x10³/μL - Normal: 1.0-4.0
+        urea: 5.2,                  // mmol/L - Normal: 2.5-7.5
+        potassium: 4.1,             // mmol/L - Normal: 3.5-5.0
+        sodium: 140,                // mmol/L - Normal: 136-145
+        
+        // Clinical Factors - Use exact same defaults as Generate Prediction form
+        sars_cov2_exam_result: 0,   // 0=Negative, 1=Positive
+        length_of_stay: 5,          // Days
+        num_medications: 5,         // Count of medications (same default as form)
+        previous_admissions: 0,     // Number of previous admissions in past year
+      };
+
+      // Remove the redundant admission type override logic
+      // Both should use regular_ward_admission: 1 by default (same as Generate Prediction)
+
+      // Prepare data for ML prediction
+      const predictionData = {
+        ...defaultFormData,
+        patient_id: patient.id,
+        doctor_id: user?.id || user?.email || `Doctor-${currentDepartment}`,
+      };
+
+      console.log('=== GET PREDICTION DEBUG ===');
+      console.log('Getting ML prediction for patient:', patient.id, 'with data:', predictionData);
+      console.log('Patient medical conditions:', patient.medical_conditions);
+      console.log('Mapped conditions:', {
+        diabetes: defaultFormData.diabetes,
+        hypertension: defaultFormData.hypertension,
+        heart_disease: defaultFormData.heart_disease,
+        kidney_disease: defaultFormData.kidney_disease,
+        respiratory_disease: defaultFormData.respiratory_disease
+      });
+      console.log('Lab values being used:', {
+        hemoglobin: defaultFormData.hemoglobin,
+        hematocrit: defaultFormData.hematocrit,
+        platelets: defaultFormData.platelets,
+        length_of_stay: defaultFormData.length_of_stay
+      });
+
+      // Call the real ML prediction API
+      const response = await patientAPI.createPrediction(patient.id, predictionData);
+      
+      if (response.data) {
+        // Convert the ML prediction result to the format expected by this component
+        const mlResult = response.data;
+        console.log('Raw ML prediction result:', mlResult);
+        
+        // Extract probability/risk score - handle different formats
+        let probability = mlResult.risk_percentage || mlResult.probability || mlResult.risk_score || 0;
+        
+        // The backend returns risk_percentage as 0-100, convert to decimal (0-1)
+        if (probability > 1) {
+          probability = probability / 100;
+        }
+        
+        setPrediction({
+          riskScore: probability,
+          outcome: mlResult.risk_level === 'high' ? 'readmit' : 
+                   mlResult.risk_level === 'medium' ? 'monitor' : 'low'
+        });
+        console.log('Processed prediction:', { 
+          riskScore: probability, 
+          outcome: mlResult.risk_level,
+          rawRiskPercentage: mlResult.risk_percentage,
+          rawProbability: mlResult.probability,
+          rawRiskScore: mlResult.risk_score,
+          confidence: mlResult.confidence,
+          riskFactors: mlResult.risk_factors
+        });
+      }
+
+    } catch (error) {
+      console.error('Error getting ML prediction:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      
+      // Show more specific error information
+      let errorMessage = 'Error getting ML prediction: ';
+      if (error.response?.status === 404) {
+        errorMessage += 'ML prediction service not found. ';
+      } else if (error.response?.status === 500) {
+        errorMessage += 'Server error in ML prediction service. ';
+      } else if (error.code === 'ECONNREFUSED') {
+        errorMessage += 'Cannot connect to backend server. ';
+      } else {
+        errorMessage += error.message + ' ';
+      }
+      
+      alert(errorMessage + '\n\nNote: Make sure the backend server is running and the ML prediction service is configured.');
+    } finally {
+      setPredicting(false);
     }
-    if (patient.medical_conditions?.length > 1) riskScore += 0.1;
-    riskScore = Math.min(0.99, Math.max(0, riskScore));
-  let outcome = 'low';
-  if (riskScore >= 0.7) outcome = 'readmit';
-  else if (riskScore >= 0.3) outcome = 'monitor';
-  setPrediction({ riskScore, outcome });
-    setPredicting(false);
   };
 
   const formatDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -213,16 +309,42 @@ export default function DoctorPatientDetails() {
               <h3 className="text-lg font-medium text-gray-900 mb-4">Risk & Readmission</h3>
               <button onClick={handlePredict} disabled={predicting} className="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50">{predicting ? 'Predicting...' : 'Get Prediction'}</button>
               {prediction && (
-                <div className="mt-4">
-                  <p className="text-sm text-gray-700">Risk Score: <span className="font-semibold">{Math.round(prediction.riskScore * 100)}%</span></p>
-                  {(() => {
-                    let outText = 'Low Risk';
-                    if (prediction.outcome === 'readmit') outText = 'Readmission';
-                    else if (prediction.outcome === 'monitor') outText = 'Monitor';
-                    return (
-                      <p className="text-sm text-gray-700">Outcome: <span className="font-semibold">{outText}</span></p>
-                    );
-                  })()}
+                <div className="mt-4 space-y-3">
+                  {/* Risk Level Badge */}
+                  <div className={`inline-flex items-center px-3 py-2 rounded-full text-sm font-medium ${
+                    prediction.outcome === 'readmit' ? 'bg-red-50 border border-red-200 text-red-700' :
+                    prediction.outcome === 'monitor' ? 'bg-yellow-50 border border-yellow-200 text-yellow-700' :
+                    'bg-green-50 border border-green-200 text-green-700'
+                  }`}>
+                    {prediction.outcome === 'readmit' ? '🚨' : prediction.outcome === 'monitor' ? '⚠️' : '✅'}
+                    <span className="ml-2">
+                      {prediction.outcome === 'readmit' ? 'High Risk' : 
+                       prediction.outcome === 'monitor' ? 'Medium Risk' : 'Low Risk'}
+                    </span>
+                  </div>
+                  
+                  {/* Risk Percentage */}
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">Readmission Probability</span>
+                      <span className="text-lg font-bold text-gray-900">{Math.round(prediction.riskScore * 100)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full ${
+                          prediction.riskScore >= 0.7 ? 'bg-gradient-to-r from-red-400 to-red-600' :
+                          prediction.riskScore >= 0.3 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' :
+                          'bg-gradient-to-r from-green-400 to-green-600'
+                        }`}
+                        style={{ width: `${Math.round(prediction.riskScore * 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* Quick Insights */}
+                  <div className="text-xs text-gray-600 bg-blue-50 p-2 rounded border-l-4 border-blue-400">
+                    💡 <strong>ML Analysis:</strong> Based on patient medical history, lab values, and clinical factors.
+                  </div>
                 </div>
               )}
             </div>

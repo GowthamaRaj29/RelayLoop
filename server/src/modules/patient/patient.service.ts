@@ -20,7 +20,7 @@ export class PatientService {
       const supabase = this.supabaseService.getClient();
       
       // Check if MRN already exists
-      const { data: existingPatient, error: checkError } = await supabase
+      const { data: existingPatient } = await supabase
         .from('patients')
         .select('id')
         .eq('mrn', createPatientDto.mrn)
@@ -457,15 +457,30 @@ export class PatientService {
   }
 
   // ML Prediction methods
-  async createPrediction(createPredictionDto: CreatePredictionDto, userDepartment?: string): Promise<PredictionResultDto> {
+  async createPrediction(patientId: string, predictionData: CreatePredictionDto): Promise<PredictionResultDto> {
     try {
-      // Verify patient exists and user has access
-      const patient = await this.findOne(createPredictionDto.patient_id, userDepartment);
+      // Verify patient exists and get patient data
+      const patient = await this.findOne(patientId);
 
-      // Run ML prediction
-      const predictionResult = await this.mlPredictionService.predictReadmissionRisk(patient, createPredictionDto);
+      // Add calculated age and other patient details to patient object
+      const patientWithCalculatedData = {
+        ...patient,
+        age: this.calculateAge(patient.dob),
+        patient_age: this.calculateAge(patient.dob),
+        patient_gender: patient.gender,
+        department: patient.department
+      };
 
-      this.logger.log(`Created ML prediction for patient: ${createPredictionDto.patient_id}`);
+      // Add patient ID to prediction data
+      const completeData: CreatePredictionDto = {
+        ...predictionData,
+        patient_id: patientId,
+      };
+
+      // Use the ML prediction service to create and store the prediction
+      const predictionResult = await this.mlPredictionService.predictReadmissionRisk(patientWithCalculatedData, completeData);
+
+      this.logger.log(`Created and stored ML prediction for patient: ${patientId}`);
       return predictionResult;
     } catch (error) {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
@@ -476,11 +491,25 @@ export class PatientService {
     }
   }
 
+  private calculateAge(dob: string): number {
+    const birthDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age;
+  }
+
   async getPatientPredictions(patientId: string, userDepartment?: string): Promise<PredictionResultDto[]> {
     try {
       // Verify patient exists and user has access
       await this.findOne(patientId, userDepartment);
 
+      // Get predictions from the ML prediction service
       return await this.mlPredictionService.getPatientPredictions(patientId);
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -491,8 +520,25 @@ export class PatientService {
     }
   }
 
+  async getLatestPrediction(patientId: string, userDepartment?: string): Promise<PredictionResultDto | null> {
+    try {
+      // Verify patient exists and user has access
+      await this.findOne(patientId, userDepartment);
+
+      // Get latest prediction from the ML prediction service
+      return await this.mlPredictionService.getLatestPrediction(patientId);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Unexpected error fetching latest prediction: ${error.message}`);
+      throw new BadRequestException('Failed to fetch latest prediction');
+    }
+  }
+
   async getDepartmentPredictions(department?: string): Promise<any[]> {
     try {
+      // Get department predictions from the ML prediction service
       return await this.mlPredictionService.getDepartmentPredictions(department);
     } catch (error) {
       this.logger.error(`Unexpected error fetching department predictions: ${error.message}`);

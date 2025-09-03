@@ -8,24 +8,42 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Get('profile')
+    @Get('profile')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({ status: 200, description: 'User profile retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getProfile(@Request() req) {
-    const profile = await this.authService.getUserProfile(req.user.id);
+    // Debug logging
+    console.log('Auth Profile - Full User Object:', req.user);
     
     return {
       statusCode: HttpStatus.OK,
-      message: 'User profile retrieved successfully',
+      message: 'Profile retrieved successfully',
       data: {
-        id: req.user.id,
-        email: req.user.email,
-        role: req.user.role,
-        department: req.user.department,
-        ...profile
+        user: {
+          id: req.user.id,
+          email: req.user.email,
+          role: req.user.role,
+          department: req.user.department
+        }
+      }
+    };
+  }
+
+  @Get('debug')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Debug current user info' })
+  @ApiResponse({ status: 200, description: 'Debug info retrieved successfully' })
+  async debugUser(@Request() req) {
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Debug info retrieved successfully',
+      data: {
+        user: req.user,
+        timestamp: new Date().toISOString()
       }
     };
   }

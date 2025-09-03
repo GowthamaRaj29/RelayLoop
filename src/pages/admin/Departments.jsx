@@ -10,6 +10,7 @@ import {
   MapPinIcon,
   BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
+import { departmentAPI } from '../../services/api';
 
 export default function Departments() {
   const [departments, setDepartments] = useState([]);
@@ -24,11 +25,14 @@ export default function Departments() {
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     defaultValues: {
       name: '',
-      head: '',
       description: '',
+      head: '',
       location: '',
       doctorsCount: 0,
-      nursesCount: 0
+      nursesCount: 0,
+      phoneNumber: '',
+      email: '',
+      active: true
     }
   });
 
@@ -36,30 +40,15 @@ export default function Departments() {
     const fetchDepartments = async () => {
       try {
         setIsLoading(true);
-        await new Promise(resolve => setTimeout(resolve, 800));
-        const mockDepartments = [
-          {
-            id: 1,
-            name: 'Cardiology',
-            head: 'Dr. Jane Smith',
-            description: 'Specialized cardiac care unit with state-of-the-art facilities',
-            doctorsCount: 10,
-            nursesCount: 20,
-            location: 'Floor 2, West Wing'
-          },
-          {
-            id: 2,
-            name: 'Pediatrics',
-            head: 'Dr. Sarah Wilson',
-            description: 'Child-focused healthcare with specialized pediatric facilities',
-            doctorsCount: 12,
-            nursesCount: 25,
-            location: 'Floor 1, North Wing'
-          }
-        ];
-        setDepartments(mockDepartments);
-      } catch (_err) {
-        setError('Failed to fetch departments');
+        setError(null);
+        
+        const response = await departmentAPI.getDepartments();
+        const departmentsData = response.data || [];
+        setDepartments(departmentsData);
+      } catch (error) {
+        console.error('Failed to fetch departments:', error);
+        setError('Failed to fetch departments. Please try again later.');
+        setDepartments([]);
       } finally {
         setIsLoading(false);
       }
@@ -68,29 +57,88 @@ export default function Departments() {
     fetchDepartments();
   }, []);
 
-  const handleAddDepartment = (data) => {
-    const newDepartment = {
-      id: departments.length + 1,
-      ...data
-    };
-    setDepartments([...departments, newDepartment]);
-    setShowAddModal(false);
-    reset();
+  const handleAddDepartment = async (data) => {
+    try {
+      setIsLoading(true);
+      const response = await departmentAPI.createDepartment(data);
+      
+      if (response.data) {
+        setDepartments([...departments, response.data]);
+        setShowAddModal(false);
+        reset();
+      } else {
+        throw new Error('Failed to create department');
+      }
+    } catch (error) {
+      console.error('Error creating department:', error);
+      setError('Failed to create department. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleEditDepartment = (data) => {
-    const updatedDepartments = departments.map(dept => 
-      dept.id === selectedDepartment.id ? { ...dept, ...data } : dept
-    );
-    setDepartments(updatedDepartments);
-    setShowEditModal(false);
-    setSelectedDepartment(null);
-    reset();
+  const handleEditDepartment = async (data) => {
+    try {
+      setIsLoading(true);
+      const response = await departmentAPI.updateDepartment(selectedDepartment.id, data);
+      
+      if (response.data) {
+        const updatedDepartments = departments.map(dept => 
+          dept.id === selectedDepartment.id ? response.data : dept
+        );
+        setDepartments(updatedDepartments);
+        setShowEditModal(false);
+        setSelectedDepartment(null);
+        reset();
+      } else {
+        throw new Error('Failed to update department');
+      }
+    } catch (error) {
+      console.error('Error updating department:', error);
+      setError('Failed to update department. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleDeleteDepartment = (id) => {
-    const updatedDepartments = departments.filter(dept => dept.id !== id);
-    setDepartments(updatedDepartments);
+  const handleDeleteDepartment = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this department? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      await departmentAPI.deleteDepartment(id);
+      
+      const updatedDepartments = departments.filter(dept => dept.id !== id);
+      setDepartments(updatedDepartments);
+    } catch (error) {
+      console.error('Error deleting department:', error);
+      setError('Failed to delete department. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSeedDepartments = async () => {
+    if (!window.confirm('This will create sample departments. Are you sure?')) {
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      await departmentAPI.seedDepartments();
+      
+      // Refresh the departments list
+      const response = await departmentAPI.getDepartments();
+      const departmentsData = response.data || [];
+      setDepartments(departmentsData);
+    } catch (error) {
+      console.error('Error seeding departments:', error);
+      setError('Failed to seed departments. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const filteredDepartments = departments.filter(dept =>
@@ -137,13 +185,24 @@ export default function Departments() {
                 className="block w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm transition-colors"
               />
             </div>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm font-medium w-full sm:w-auto"
-            >
-              <PlusIcon className="h-5 w-5 flex-shrink-0" />
-              <span>Add Department</span>
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm font-medium w-full sm:w-auto"
+              >
+                <PlusIcon className="h-5 w-5 flex-shrink-0" />
+                <span>Add Department</span>
+              </button>
+              {departments.length === 0 && (
+                <button
+                  onClick={handleSeedDepartments}
+                  className="flex items-center justify-center gap-2 bg-green-600 text-white px-5 py-2.5 rounded-lg hover:bg-green-700 transition-colors shadow-sm font-medium w-full sm:w-auto"
+                >
+                  <BuildingOfficeIcon className="h-5 w-5 flex-shrink-0" />
+                  <span>Seed Departments</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Grid */}
@@ -435,7 +494,6 @@ export default function Departments() {
                 type="button"
                 onClick={() => {
                   setShowDetailsModal(false);
-                  setSelectedDepartment(selectedDepartment);
                   setShowEditModal(true);
                 }}
                 className="w-full sm:w-auto px-5 py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded-lg shadow-sm"

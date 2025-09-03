@@ -159,12 +159,6 @@ const AdminLayout = memo(function AdminLayout() {
       current: location.pathname === '/admin/patients' || location.pathname.startsWith('/admin/patients/')
     },
     { 
-      name: 'Departments', 
-      path: '/admin/departments', 
-      icon: OfficeBuildingIcon,
-      current: location.pathname === '/admin/departments'
-    },
-    { 
       name: 'Predictions', 
       path: '/admin/predictions', 
       icon: LightningBoltIcon,

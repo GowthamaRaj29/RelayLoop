@@ -5,6 +5,7 @@ import {
   DepartmentPerformanceChart,
   PredictionAccuracyChart
 } from '../../components/charts/DashboardCharts';
+import { patientAPI } from '../../services/api';
 
 // Main dashboard component - Using React.memo to prevent unnecessary rerenders
 const AdminDashboard = memo(function AdminDashboard() {
@@ -22,16 +23,31 @@ const AdminDashboard = memo(function AdminDashboard() {
     try {
       setIsLoading(true);
       
-      // Simulate API call with reduced timeout for faster loading
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Fetch data from APIs
+      const [patientStatsRes, predictionsRes] = await Promise.all([
+        patientAPI.getPatientStats().catch(() => ({ data: { totalPatients: 0, activePatients: 0, highRiskPatients: 0, recentAdmissions: 0 }})),
+        patientAPI.getAllPredictions().catch(() => ({ data: [] }))
+      ]);
+
+      const patientStats = patientStatsRes.data || {};
+      const predictions = predictionsRes.data || [];
       
-      // Mock data
+      // Calculate high risk patients from predictions
+      const highRiskCount = predictions.filter(p => p.risk_level === 'high').length;
+      const recentReadmissions = predictions.filter(p => {
+        const predictionDate = new Date(p.predicted_at);
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        return predictionDate >= thirtyDaysAgo && p.risk_level === 'high';
+      }).length;
+      
       setStats({
-        totalPatients: 248,
-        highRiskPatients: 42,
-        recentReadmissions: 15,
-        pendingAssessments: 23
+        totalPatients: patientStats.totalPatients || 0,
+        highRiskPatients: highRiskCount,
+        recentReadmissions: recentReadmissions,
+        pendingAssessments: patientStats.totalPatients - predictions.length || 0
       });
+      
     } catch (err) {
       console.error('Error loading dashboard data:', err);
       setError('Failed to load dashboard data. Please try again.');

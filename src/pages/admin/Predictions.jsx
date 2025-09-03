@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MagnifyingGlassIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Dialog, Transition } from '@headlessui/react';
+import { patientAPI } from '../../services/api';
 
 export default function Predictions() {
   const [predictions, setPredictions] = useState([]);
@@ -17,10 +18,32 @@ export default function Predictions() {
       try {
         setIsLoading(true);
         
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 800));
+        // Try to fetch real data from API
+        try {
+          const response = await patientAPI.getAllPredictions();
+          const predictionsData = response.data || [];
+          
+          if (predictionsData.length > 0) {
+            // Transform API data to match component expectations
+            const transformedPredictions = predictionsData.map(prediction => ({
+              id: prediction.id,
+              patientName: `${prediction.patient?.first_name || ''} ${prediction.patient?.last_name || ''}`.trim() || 'Unknown Patient',
+              patientMrn: prediction.patient?.mrn || 'N/A',
+              riskScore: prediction.risk_percentage ? prediction.risk_percentage / 100 : 0.5,
+              predictedOutcome: prediction.risk_level === 'high' ? 'readmit' : 'no-readmit',
+              modelVersion: 'v2.3.1',
+              requestedBy: prediction.doctor_id || 'Unknown Doctor',
+              date: prediction.predicted_at ? new Date(prediction.predicted_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+            }));
+            
+            setPredictions(transformedPredictions);
+            return;
+          }
+        } catch (apiError) {
+          console.log('Using mock data as API returned no data:', apiError.message);
+        }
         
-        // Mock data
+        // Fallback to mock data if API is not available or returns no data
         const mockPredictions = [
           {
             id: 1,

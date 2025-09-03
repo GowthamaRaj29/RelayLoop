@@ -1,14 +1,21 @@
 // API service for communicating with the backend
+import { supabase } from '../lib/supabase';
+
 const API_BASE_URL = 'http://localhost:3002/api/v1';
 
 // Generic API request function
 async function apiRequest(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
   
+  // Get the current session token
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  
   const config = {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
       ...options.headers,
     },
     ...options,
@@ -94,6 +101,27 @@ export const patientAPI = {
     const params = department ? `?department=${department}` : '';
     return await apiRequest(`/patients/stats${params}`);
   },
+
+  // ML Prediction APIs
+  async createPrediction(patientId, predictionData) {
+    return await apiRequest(`/patients/${patientId}/predictions`, {
+      method: 'POST',
+      body: JSON.stringify(predictionData),
+    });
+  },
+
+  async getPredictions(patientId) {
+    return await apiRequest(`/patients/${patientId}/predictions`);
+  },
+
+  async getLatestPrediction(patientId) {
+    return await apiRequest(`/patients/${patientId}/predictions/latest`);
+  },
+
+  async getAllPredictions(department) {
+    const params = department ? `?department=${department}` : '';
+    return await apiRequest(`/patients/predictions/department${params}`);
+  },
 };
 
 // Vital Signs API functions
@@ -143,29 +171,54 @@ export const vitalSignsAPI = {
   },
 };
 
-// Department API functions
-export const departmentAPI = {
-  // Get all departments
-  async getDepartments() {
-    return await apiRequest('/departments');
-  },
-
-  // Get department stats
-  async getStats() {
-    return await apiRequest('/departments/stats');
-  },
-
-  // Get specific department stats
-  async getDepartmentStats(id) {
-    return await apiRequest(`/departments/${id}/stats`);
-  },
-};
-
 // User API functions
 export const userAPI = {
   // Get user stats
   async getStats() {
     return await apiRequest('/users/stats');
+  },
+
+  // Get all users (Admin only)
+  async getUsers(params = {}) {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.append('page', params.page);
+    if (params.limit) queryParams.append('limit', params.limit);
+    if (params.search) queryParams.append('search', params.search);
+    if (params.role) queryParams.append('role', params.role);
+    if (params.department) queryParams.append('department', params.department);
+    
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/users?${queryString}` : '/users';
+    
+    return await apiRequest(endpoint);
+  },
+
+  // Get user by ID
+  async getUser(id) {
+    return await apiRequest(`/users/${id}`);
+  },
+
+  // Create new user (Admin only)
+  async createUser(userData) {
+    return await apiRequest('/users', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  },
+
+  // Update user (Admin only)
+  async updateUser(id, userData) {
+    return await apiRequest(`/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    });
+  },
+
+  // Delete user (Admin only)
+  async deleteUser(id) {
+    return await apiRequest(`/users/${id}`, {
+      method: 'DELETE',
+    });
   },
 };
 
@@ -193,7 +246,6 @@ export const healthAPI = {
 export default {
   patient: patientAPI,
   vitalSigns: vitalSignsAPI,
-  department: departmentAPI,
   user: userAPI,
   auth: authAPI,
   health: healthAPI,

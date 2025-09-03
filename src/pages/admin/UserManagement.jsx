@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
+import { userAPI } from '../../services/api';
 
 export default function UserManagement() {
   const { role } = useAuth();
@@ -10,81 +10,49 @@ export default function UserManagement() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isNewUserModalOpen, setIsNewUserModalOpen] = useState(false);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0
+  });
+  const [filters, setFilters] = useState({
+    search: '',
+    role: '',
+    department: ''
+  });
   
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [pagination.page, filters]); // eslint-disable-line react-hooks/exhaustive-deps
   
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
+      setError(null);
       
-      // In a production app, we would fetch real data from Supabase
-      // const { data, error } = await supabase
-      //   .from('profiles')
-      //   .select('id, email, first_name, last_name, department, role, created_at')
-      //   .order('created_at', { ascending: false });
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit,
+        ...filters
+      };
       
-      // if (error) throw error;
+      const response = await userAPI.getUsers(params);
       
-      // Simulated data
-      const mockUsers = [
-        {
-          id: '1',
-          email: 'admin@relayloop.com',
-          first_name: 'Admin',
-          last_name: 'User',
-          role: 'admin',
-          department: 'IT Administration',
-          created_at: '2023-08-01T10:00:00Z',
-          status: 'active'
-        },
-        {
-          id: '2',
-          email: 'doctor.smith@relayloop.com',
-          first_name: 'John',
-          last_name: 'Smith',
-          role: 'doctor',
-          department: 'Cardiology',
-          created_at: '2023-08-05T14:30:00Z',
-          status: 'active'
-        },
-        {
-          id: '3',
-          email: 'nurse.johnson@relayloop.com',
-          first_name: 'Sarah',
-          last_name: 'Johnson',
-          role: 'nurse',
-          department: 'Emergency Care',
-          created_at: '2023-08-10T09:15:00Z',
-          status: 'active'
-        },
-        {
-          id: '4',
-          email: 'doctor.williams@relayloop.com',
-          first_name: 'Robert',
-          last_name: 'Williams',
-          role: 'doctor',
-          department: 'Neurology',
-          created_at: '2023-08-12T11:20:00Z',
-          status: 'inactive'
-        },
-        {
-          id: '5',
-          email: 'nurse.davis@relayloop.com',
-          first_name: 'Emily',
-          last_name: 'Davis',
-          role: 'nurse',
-          department: 'Pediatrics',
-          created_at: '2023-08-15T16:45:00Z',
-          status: 'pending'
-        }
-      ];
-      
-      setUsers(mockUsers);
+      if (response.statusCode === 200) {
+        setUsers(response.data.users || []);
+        setPagination(prev => ({
+          ...prev,
+          total: response.data.total || 0,
+          totalPages: response.data.totalPages || 0
+        }));
+      } else {
+        throw new Error(response.message || 'Failed to fetch users');
+      }
     } catch (err) {
       console.error('Error fetching users:', err);
-      setError('Failed to load users. Please try again.');
+      setError(`Failed to load users: ${err.message}`);
+      setUsers([]);
     } finally {
       setIsLoading(false);
     }
@@ -101,84 +69,106 @@ export default function UserManagement() {
     }
     
     try {
-      // In a real app, this would delete the user from Supabase
-      // await supabase.from('profiles').delete().eq('id', userId);
+      const response = await userAPI.deleteUser(userId);
       
-      // For now, just update the local state
-      setUsers(users.filter(user => user.id !== userId));
-      alert('User deleted successfully');
+      if (response.statusCode === 200) {
+        // Refresh the user list
+        await fetchUsers();
+        alert('User deleted successfully');
+      } else {
+        throw new Error(response.message || 'Failed to delete user');
+      }
     } catch (err) {
       console.error('Error deleting user:', err);
-      alert('Failed to delete user. Please try again.');
+      alert(`Failed to delete user: ${err.message}`);
     }
   };
   
   const handleUserUpdate = async (updatedUser) => {
     try {
-      // In a real app, update the user in Supabase
-      // await supabase
-      //   .from('profiles')
-      //   .update({
-      //     first_name: updatedUser.first_name,
-      //     last_name: updatedUser.last_name,
-      //     department: updatedUser.department,
-      //     role: updatedUser.role,
-      //     status: updatedUser.status
-      //   })
-      //   .eq('id', updatedUser.id);
+      const response = await userAPI.updateUser(updatedUser.id, updatedUser);
       
-      // Update local state
-      setUsers(users.map(user => 
-        user.id === updatedUser.id ? updatedUser : user
-      ));
-      
-      setIsModalOpen(false);
-      setSelectedUser(null);
-      alert('User updated successfully');
+      if (response.statusCode === 200) {
+        // Refresh the user list
+        await fetchUsers();
+        setIsModalOpen(false);
+        setSelectedUser(null);
+        alert('User updated successfully');
+      } else {
+        throw new Error(response.message || 'Failed to update user');
+      }
     } catch (err) {
       console.error('Error updating user:', err);
-      alert('Failed to update user. Please try again.');
+      alert(`Failed to update user: ${err.message}`);
     }
   };
   
   const handleCreateUser = async (newUser) => {
     try {
-      // In a real app, create the user in Supabase Auth
-      // const { data, error } = await supabase.auth.admin.createUser({
-      //   email: newUser.email,
-      //   password: newUser.password,
-      //   email_confirm: true,
-      //   user_metadata: { role: newUser.role }
-      // });
+      const response = await userAPI.createUser(newUser);
       
-      // if (error) throw error;
-      
-      // Then add to profiles table
-      // await supabase.from('profiles').insert({
-      //   id: data.user.id,
-      //   email: newUser.email,
-      //   first_name: newUser.first_name,
-      //   last_name: newUser.last_name,
-      //   department: newUser.department,
-      //   role: newUser.role,
-      //   status: 'pending'
-      // });
-      
-      // For now, simulate with a fake ID
-      const fakeId = Date.now().toString();
-      const createdUser = {
-        ...newUser,
-        id: fakeId,
-        created_at: new Date().toISOString(),
-        status: 'pending'
-      };
-      
-      setUsers([createdUser, ...users]);
-      setIsNewUserModalOpen(false);
-      alert('User created successfully');
+      if (response.statusCode === 201) {
+        // Refresh the user list
+        await fetchUsers();
+        setIsNewUserModalOpen(false);
+        alert('User created successfully');
+      } else {
+        throw new Error(response.message || 'Failed to create user');
+      }
     } catch (err) {
       console.error('Error creating user:', err);
-      alert('Failed to create user. Please try again.');
+      alert(`Failed to create user: ${err.message}`);
+    }
+  };
+
+  const handleSearchChange = (e) => {
+    setFilters(prev => ({
+      ...prev,
+      search: e.target.value
+    }));
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  const handleRoleFilterChange = (e) => {
+    setFilters(prev => ({
+      ...prev,
+      role: e.target.value
+    }));
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  const handleDepartmentFilterChange = (e) => {
+    setFilters(prev => ({
+      ...prev,
+      department: e.target.value
+    }));
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  const handlePageChange = (newPage) => {
+    setPagination(prev => ({ ...prev, page: newPage }));
+  };
+
+  const getStatusBadge = (status) => {
+    const baseClasses = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium";
+    
+    if (status === 'active' || status === true) {
+      return `${baseClasses} bg-green-100 text-green-800`;
+    } else if (status === 'inactive' || status === false) {
+      return `${baseClasses} bg-red-100 text-red-800`;
+    } else if (status === 'pending') {
+      return `${baseClasses} bg-yellow-100 text-yellow-800`;
+    } else {
+      return `${baseClasses} bg-gray-100 text-gray-800`;
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      return new Date(dateString).toLocaleDateString();
+    } catch {
+      return 'Invalid Date';
     }
   };
 
@@ -208,6 +198,59 @@ export default function UserManagement() {
             </button>
           </div>
         )}
+        
+        {/* Filters */}
+        <div className="mt-6 bg-white p-4 rounded-lg shadow">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
+                Search Users
+              </label>
+              <input
+                type="text"
+                id="search"
+                placeholder="Search by name or email..."
+                value={filters.search}
+                onChange={handleSearchChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"
+              />
+            </div>
+            <div>
+              <label htmlFor="role-filter" className="block text-sm font-medium text-gray-700 mb-1">
+                Filter by Role
+              </label>
+              <select
+                id="role-filter"
+                value={filters.role}
+                onChange={handleRoleFilterChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"
+              >
+                <option value="">All Roles</option>
+                <option value="admin">Admin</option>
+                <option value="doctor">Doctor</option>
+                <option value="nurse">Nurse</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="department-filter" className="block text-sm font-medium text-gray-700 mb-1">
+                Filter by Department
+              </label>
+              <select
+                id="department-filter"
+                value={filters.department}
+                onChange={handleDepartmentFilterChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"
+              >
+                <option value="">All Departments</option>
+                <option value="Cardiology">Cardiology</option>
+                <option value="Neurology">Neurology</option>
+                <option value="Oncology">Oncology</option>
+                <option value="Pediatrics">Pediatrics</option>
+                <option value="General Medicine">General Medicine</option>
+              </select>
+            </div>
+          </div>
+        </div>
         
         <div className="mt-6 flex flex-col">
           <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -303,15 +346,12 @@ export default function UserManagement() {
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                ${user.status === 'active' ? 'bg-green-100 text-green-800' : 
-                                  user.status === 'inactive' ? 'bg-red-100 text-red-800' : 
-                                  'bg-yellow-100 text-yellow-800'}`}>
-                                {user.status}
+                              <span className={getStatusBadge(user.is_active !== false ? 'active' : 'inactive')}>
+                                {user.is_active !== false ? 'Active' : 'Inactive'}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">
-                              {new Date(user.created_at).toLocaleDateString()}
+                              {formatDate(user.created_at)}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                               <button 
@@ -337,6 +377,70 @@ export default function UserManagement() {
             </div>
           </div>
         </div>
+        
+        {/* Pagination */}
+        {pagination.totalPages > 1 && (
+          <div className="mt-6 flex items-center justify-between">
+            <div className="flex items-center text-sm text-gray-700">
+              <span>
+                Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
+              </span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => handlePageChange(pagination.page - 1)}
+                disabled={pagination.page <= 1}
+                className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              
+              {[...Array(pagination.totalPages)].map((_, index) => {
+                const pageNum = index + 1;
+                const isCurrentPage = pageNum === pagination.page;
+                
+                // Show first page, last page, current page, and pages around current
+                if (
+                  pageNum === 1 ||
+                  pageNum === pagination.totalPages ||
+                  (pageNum >= pagination.page - 1 && pageNum <= pagination.page + 1)
+                ) {
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`px-3 py-2 text-sm font-medium rounded-md ${
+                        isCurrentPage
+                          ? 'bg-indigo-600 text-white'
+                          : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                } else if (
+                  pageNum === pagination.page - 2 ||
+                  pageNum === pagination.page + 2
+                ) {
+                  return (
+                    <span key={pageNum} className="px-3 py-2 text-sm text-gray-500">
+                      ...
+                    </span>
+                  );
+                }
+                return null;
+              })}
+              
+              <button
+                onClick={() => handlePageChange(pagination.page + 1)}
+                disabled={pagination.page >= pagination.totalPages}
+                className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Edit User Modal */}
@@ -372,7 +476,9 @@ function UserModal({ user, isNew = false, onClose, onSave }) {
           first_name: '', 
           last_name: '',
           department: '',
-          role: 'nurse' 
+          role: 'nurse',
+          phone: '',
+          is_active: true
         }
       : { 
           ...user, 
@@ -422,7 +528,7 @@ function UserModal({ user, isNew = false, onClose, onSave }) {
                   value={formData.first_name}
                   onChange={handleChange}
                   required
-                  className="block w-full h-10 px-3 py-2 text-gray-900 bg-white bg-opacity-95 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="block w-full h-10 px-3 py-2 text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                   placeholder="Enter first name"
                 />
               </div>
@@ -438,7 +544,7 @@ function UserModal({ user, isNew = false, onClose, onSave }) {
                   value={formData.last_name}
                   onChange={handleChange}
                   required
-                  className="block w-full h-10 px-3 py-2 text-gray-900 bg-white bg-opacity-95 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="block w-full h-10 px-3 py-2 text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                   placeholder="Enter last name"
                 />
               </div>
@@ -455,7 +561,7 @@ function UserModal({ user, isNew = false, onClose, onSave }) {
                   onChange={handleChange}
                   disabled={!isNew}
                   required
-                  className="block w-full h-10 px-3 py-2 text-gray-900 bg-white bg-opacity-95 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm disabled:bg-gray-100 disabled:text-gray-600"
+                  className="block w-full h-10 px-3 py-2 text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm disabled:bg-gray-100 disabled:text-gray-600"
                   placeholder="user@example.com"
                 />
               </div>
@@ -472,7 +578,7 @@ function UserModal({ user, isNew = false, onClose, onSave }) {
                     value={formData.password}
                     onChange={handleChange}
                     required={isNew}
-                    className="block w-full h-10 px-3 py-2 text-gray-900 bg-white bg-opacity-95 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    className="block w-full h-10 px-3 py-2 text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     placeholder="Enter Password"
                   />
                 </div>
@@ -489,8 +595,23 @@ function UserModal({ user, isNew = false, onClose, onSave }) {
                   value={formData.department || ''}
                   onChange={handleChange}
                   required
-                  className="block w-full h-10 px-3 py-2 text-gray-900 bg-white bg-opacity-95 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="block w-full h-10 px-3 py-2 text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                   placeholder="E.g., Cardiology, Pediatrics, IT Administration"
+                />
+              </div>
+
+              <div className="col-span-6">
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  id="phone"
+                  value={formData.phone || ''}
+                  onChange={handleChange}
+                  className="block w-full h-10 px-3 py-2 text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  placeholder="(555) 123-4567"
                 />
               </div>
 
@@ -503,7 +624,7 @@ function UserModal({ user, isNew = false, onClose, onSave }) {
                   name="role"
                   value={formData.role}
                   onChange={handleChange}
-                  className="block w-full h-10 px-3 py-2 text-gray-900 bg-white bg-opacity-95 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  className="block w-full h-10 px-3 py-2 text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                 >
                   <option value="admin">Admin</option>
                   <option value="doctor">Doctor</option>
@@ -513,19 +634,18 @@ function UserModal({ user, isNew = false, onClose, onSave }) {
               
               {!isNew && (
                 <div className="col-span-6">
-                  <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1.5">
+                  <label htmlFor="is_active" className="block text-sm font-medium text-gray-700 mb-1.5">
                     Status
                   </label>
                   <select
-                    id="status"
-                    name="status"
-                    value={formData.status}
-                    onChange={handleChange}
-                    className="block w-full h-10 px-3 py-2 text-gray-900 bg-white bg-opacity-95 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    id="is_active"
+                    name="is_active"
+                    value={formData.is_active}
+                    onChange={(e) => setFormData(prev => ({ ...prev, is_active: e.target.value === 'true' }))}
+                    className="block w-full h-10 px-3 py-2 text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                   >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="pending">Pending</option>
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
                   </select>
                 </div>
               )}

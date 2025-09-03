@@ -137,6 +137,7 @@ export class PredictionResultDto {
   @ApiProperty({ description: 'Prediction timestamp' })
   predicted_at: string;
 
-  @ApiProperty({ description: 'All input data used for prediction' })
-  input_data: object;
+  // Note: input_data temporarily removed due to database schema mismatch
+  // @ApiProperty({ description: 'All input data used for prediction' })
+  // input_data: object;
 }

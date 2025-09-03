@@ -26,14 +26,21 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       // Get user role and department
       const userRole = await this.supabaseService.getUserRole(user.id);
       
+      // Debug logging
+      console.log('JWT Auth Guard - User ID:', user.id);
+      console.log('JWT Auth Guard - User Email:', user.email);
+      console.log('JWT Auth Guard - User Role Data:', userRole);
+      
       // Attach user info to request
       request.user = {
+        ...user,
         id: user.id,
         email: user.email,
         role: userRole?.role || null,
-        department: userRole?.department || null,
-        ...user
+        department: userRole?.department || null
       };
+
+      console.log('JWT Auth Guard - Final User Object:', request.user);
 
       return true;
     } catch (error) {
